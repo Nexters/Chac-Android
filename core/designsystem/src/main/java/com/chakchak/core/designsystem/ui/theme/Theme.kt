@@ -1,4 +1,4 @@
-package com.chakchak.ui.theme
+package com.chakchak.core.designsystem.ui.theme
 
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme

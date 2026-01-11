@@ -24,3 +24,6 @@ rootProject.name = "ChakChak"
 
 // app
 include(":app")
+
+// core
+include(":core:designsystem")
