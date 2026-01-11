@@ -4,6 +4,7 @@ import com.chac.convention.extensions.setNamespace
 plugins {
     alias(libs.plugins.chac.android.application)
     alias(libs.plugins.chac.android.compose)
+    alias(libs.plugins.chac.android.hilt)
 }
 
 android {
