@@ -1,7 +1,6 @@
 package com.chac
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
@@ -17,20 +16,13 @@ import androidx.navigation3.runtime.SaveableStateHolderNavEntryDecorator
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.ui.NavDisplay
-import kotlinx.serialization.Serializable
+import com.chac.feature.album.navigation.AlbumNavKey
+import com.chac.feature.album.navigation.albumEntries
 
-/** 앱 네비게이션 루트에서 사용하는 NavKey 정의 */
-@Serializable
-private sealed interface AppNavKey : NavKey {
-    /** 앱 진입 화면 */
-    @Serializable
-    data object Home : AppNavKey
-}
-
-/** Navigation3 호스트를 구성하고 feature entry provider를 연결한다 */
+/** Navigation3 호스트를 구성하고 앨범 기능 entry provider를 연결한다 */
 @Composable
 fun ChacAppNavigation() {
-    val backStack = rememberNavBackStack(AppNavKey.Home)
+    val backStack = rememberNavBackStack(AlbumNavKey.Clustering)
     val saveableStateHolder = rememberSaveableStateHolder()
 
     BackHandler(enabled = backStack.size > 1) {
@@ -50,9 +42,10 @@ fun ChacAppNavigation() {
             ),
             modifier = Modifier.padding(innerPadding),
             entryProvider = entryProvider {
-                entry(AppNavKey.Home) {
-                    HomeScreen()
-                }
+                albumEntries(
+                    onOpenGallery = { photos -> backStack.add(AlbumNavKey.Gallery(photos)) },
+                    onBack = { backStack.pop() },
+                )
             },
         )
     }
@@ -63,10 +56,4 @@ private fun NavBackStack<NavKey>.pop() {
     if (size > 1) {
         removeLastOrNull()
     }
-}
-
-/** 앱 진입 시 표시되는 빈 화면. */
-@Composable
-private fun HomeScreen() {
-    Box(modifier = Modifier.fillMaxSize())
 }
