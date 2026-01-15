@@ -20,7 +20,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.chac.core.designsystem.ui.theme.ChacTheme
 import com.chac.core.permission.MediaWithLocationPermissionUtil.launchMediaWithLocationPermission
 import com.chac.core.permission.compose.PermissionDeniedDialog

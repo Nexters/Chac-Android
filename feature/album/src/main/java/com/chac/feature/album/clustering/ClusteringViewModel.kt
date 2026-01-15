@@ -1,6 +1,5 @@
 package com.chac.feature.album.clustering
 
-import android.util.Log
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
@@ -45,7 +44,7 @@ class ClusteringViewModel
     }
 
 /**
- * (임시) 클러스터링 화면에서 사용하는 간단한 클러스터 모델
+ * (임시) 클러스터링 화면에서 사용하는 간단한 클러스터 모델N
  *
  * @param title 클러스터 제목
  * @param photos 클러스터에 포함된 사진 목록
