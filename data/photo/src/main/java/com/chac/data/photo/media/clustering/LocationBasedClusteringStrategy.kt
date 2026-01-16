@@ -7,6 +7,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import org.apache.commons.math3.ml.clustering.DBSCANClusterer
@@ -23,26 +24,24 @@ class LocationBasedClusteringStrategy
         private val minPoints = DEFAULT_MIN_POINTS
         private val batchSize = LOCATION_FETCH_BATCH_SIZE
 
-        override fun performClustering(mediaList: List<Media>): Map<Long, List<Media>> {
+        override suspend fun performClustering(mediaList: List<Media>): Map<Long, List<Media>> {
             if (mediaList.isEmpty()) return emptyMap()
 
             // 위치 정보 병렬 처리 및 위치 정보가 있는 미디어만 필터링
-            val mediaWithLocations = runBlocking {
-                withContext(Dispatchers.IO) {
-                    mediaList.chunked(batchSize).flatMap { batch ->
-                        batch
-                            .map { media ->
-                                async {
-                                    val location = getMediaLocation(context, media.uriString)
-                                    if (location?.latitude != null && location.longitude != null) {
-                                        Pair(media, location)
-                                    } else {
-                                        null
-                                    }
+            val mediaWithLocations = coroutineScope {
+                mediaList.chunked(batchSize).flatMap { batch ->
+                    batch
+                        .map { media ->
+                            async {
+                                val location = getMediaLocation(context, media.uriString)
+                                if (location?.latitude != null && location.longitude != null) {
+                                    Pair(media, location)
+                                } else {
+                                    null
                                 }
-                            }.awaitAll()
-                            .filterNotNull()
-                    }
+                            }
+                        }.awaitAll()
+                        .filterNotNull()
                 }
             }
 

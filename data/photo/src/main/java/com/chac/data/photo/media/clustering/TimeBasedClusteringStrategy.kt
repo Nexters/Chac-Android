@@ -8,7 +8,7 @@ class TimeBasedClusteringStrategy
     constructor() : ClusteringStrategy() {
         private val maxTimeDifference = DEFAULT_MAX_TIME_DIFFERENCE
 
-        override fun performClustering(mediaList: List<Media>): Map<Long, List<Media>> {
+        override suspend fun performClustering(mediaList: List<Media>): Map<Long, List<Media>> {
             if (mediaList.isEmpty()) return emptyMap()
 
             // 시간순으로 정렬
