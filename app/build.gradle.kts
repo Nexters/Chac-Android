@@ -17,6 +17,21 @@ android {
     buildFeatures {
         buildConfig = true
     }
+
+    signingConfigs {
+        create("release") {
+            storeFile = file(System.getenv("CHAC_KEYSTORE_PATH"))
+            storePassword = System.getenv("CHAC_KEYSTORE_PASSWORD")
+            keyAlias = System.getenv("CHAC_KEY_ALIAS")
+            keyPassword = System.getenv("CHAC_KEY_PASSWORD")
+        }
+    }
+
+    buildTypes {
+        getByName("release") {
+            signingConfig = signingConfigs.getByName("release")
+        }
+    }
 }
 
 dependencies {
