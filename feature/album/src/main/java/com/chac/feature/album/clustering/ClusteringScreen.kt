@@ -20,11 +20,13 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.chac.core.designsystem.ui.theme.ChacTheme
 import com.chac.core.permission.MediaWithLocationPermissionUtil.launchMediaWithLocationPermission
 import com.chac.core.permission.compose.PermissionDeniedDialog
 import com.chac.core.permission.compose.moveToPermissionSetting
 import com.chac.core.permission.compose.rememberRegisterMediaWithLocationPermission
+import com.chac.feature.album.clustering.model.ClusteringUiState
 
 /**
  * 클러스터링 화면 라우트
@@ -37,10 +39,9 @@ fun ClusteringRoute(
     onOpenGallery: (List<String>) -> Unit,
     viewModel: ClusteringViewModel = hiltViewModel(),
 ) {
-    val mediaState by viewModel.mediaState
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     ClusteringScreen(
-        clusters = viewModel.clusters,
-        media = mediaState,
+        uiState = uiState,
         onOpenGallery = onOpenGallery,
     )
 }
@@ -48,13 +49,12 @@ fun ClusteringRoute(
 /**
  * 클러스터링 목록 화면
  *
- * @param clusters 화면에 표시할 클러스터 목록
+ * @param uiState 클러스터링 화면 상태
  * @param onOpenGallery 갤러리로 이동하는 콜백
  */
 @Composable
 private fun ClusteringScreen(
-    clusters: List<ClusterItem>,
-    media: List<MediaUiModel>,
+    uiState: ClusteringUiState,
     onOpenGallery: (List<String>) -> Unit,
 ) {
     Column(
@@ -65,15 +65,9 @@ private fun ClusteringScreen(
         horizontalAlignment = Alignment.Start,
     ) {
         Text(text = "Clustering")
-        clusters.forEach { cluster ->
-            Button(onClick = { onOpenGallery(cluster.photos) }) {
-                Text(text = cluster.title)
-            }
-        }
-
         LazyColumn {
-            items(items = media, key = { it.id }) {
-                Text(text = "id:${it.id}, uri:${it.uriString}")
+            items(items = uiState.clusters, key = { it.id }) { cluster ->
+                Text(text = "cluster=${cluster.id}, size=${cluster.mediaList.size}")
             }
         }
 
@@ -123,11 +117,7 @@ fun PermissionSample() {
 private fun ClusteringScreenPreview() {
     ChacTheme {
         ClusteringScreen(
-            clusters = listOf(
-                ClusterItem(title = "Cluster A", photos = listOf("A-1", "A-2")),
-                ClusterItem(title = "Cluster B", photos = listOf("B-1")),
-            ),
-            media = emptyList(),
+            uiState = ClusteringUiState.Loading(emptyList()),
             onOpenGallery = {},
         )
     }
