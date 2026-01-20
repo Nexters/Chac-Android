@@ -41,7 +41,7 @@ android {
 
 dependencies {
     implementation(projects.core.designsystem)
-    implementation(projects.data.photo)
+    implementation(projects.data.album)
     implementation(projects.feature.album)
 
     // Core Navigation 3 라이브러리
