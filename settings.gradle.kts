@@ -31,10 +31,10 @@ include(":core:permission")
 include(":core:resources")
 
 // domain
-include(":domain:photo")
+include(":domain:album")
 
 // data
-include(":data:photo")
+include(":data:album")
 
 // feature
 include(":feature:album")
