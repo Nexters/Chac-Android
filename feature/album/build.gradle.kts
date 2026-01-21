@@ -12,6 +12,7 @@ android {
 dependencies {
     implementation(projects.core.designsystem)
     implementation(projects.core.permission)
+    implementation(projects.core.resources)
     implementation(projects.domain.album)
 
     implementation(libs.androidx.navigation3.runtime)

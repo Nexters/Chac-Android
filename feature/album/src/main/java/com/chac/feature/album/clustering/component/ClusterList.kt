@@ -1,0 +1,202 @@
+package com.chac.feature.album.clustering.component
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import com.chac.core.designsystem.ui.theme.ChacTheme
+import com.chac.core.resources.R
+import com.chac.domain.album.media.MediaType
+import com.chac.feature.album.model.ClusterUiModel
+import com.chac.feature.album.model.MediaUiModel
+
+/**
+ * 클러스터 목록을 표시한다
+ *
+ * @param clusters 클러스터 UI 모델 목록
+ * @param isLoading 로딩 중 여부
+ * @param onOpenGallery 갤러리로 이동하는 콜백
+ */
+@Composable
+fun ClusterList(
+    clusters: List<ClusterUiModel>,
+    isLoading: Boolean,
+    modifier: Modifier = Modifier,
+    onOpenGallery: (List<String>) -> Unit,
+) {
+    LazyColumn(
+        modifier = modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+        contentPadding = PaddingValues(bottom = 40.dp),
+    ) {
+        items(items = clusters, key = { it.id }) { cluster ->
+            ClusterCard(
+                cluster = cluster,
+                onOpenGallery = onOpenGallery,
+            )
+        }
+        if (isLoading) {
+            item {
+                LoadingFooter()
+            }
+        }
+    }
+}
+
+/**
+ * 클러스터 정보를 카드로 표시한다
+ *
+ * @param cluster 표시할 클러스터 모델
+ * @param onOpenGallery 갤러리로 이동하는 콜백
+ */
+@Composable
+private fun ClusterCard(
+    cluster: ClusterUiModel,
+    modifier: Modifier = Modifier,
+    onOpenGallery: (List<String>) -> Unit,
+) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+        ),
+        shape = RoundedCornerShape(12.dp),
+    ) {
+        val defaultTitle = stringResource(R.string.clustering_default_album_title)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            ClusterThumbnailStack()
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                Text(
+                    text = cluster.title.ifBlank { defaultTitle },
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    text = stringResource(
+                        R.string.clustering_photo_count,
+                        formatCount(cluster.mediaList.size),
+                    ),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Button(
+                    onClick = {
+                        onOpenGallery(cluster.mediaList.map { it.uriString })
+                    },
+                    modifier = Modifier.widthIn(min = 140.dp),
+                ) {
+                    Text(text = stringResource(R.string.clustering_action_organize))
+                }
+                TextButton(
+                    onClick = {},
+                    modifier = Modifier.align(Alignment.Start),
+                ) {
+                    Text(text = stringResource(R.string.clustering_action_keep))
+                }
+            }
+        }
+    }
+}
+
+/** 겹친 사진 더미 형태의 썸네일 플레이스홀더를 표시한다 */
+@Composable
+private fun ClusterThumbnailStack(
+    modifier: Modifier = Modifier,
+) {
+    val shape = RoundedCornerShape(8.dp)
+    Box(modifier = modifier.size(72.dp)) {
+        Box(
+            modifier = Modifier
+                .size(56.dp)
+                .offset(x = 8.dp, y = 8.dp)
+                .background(MaterialTheme.colorScheme.surface, shape)
+                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, shape),
+        )
+        Box(
+            modifier = Modifier
+                .size(56.dp)
+                .offset(x = 4.dp, y = 4.dp)
+                .background(MaterialTheme.colorScheme.surfaceVariant, shape)
+                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, shape),
+        )
+        Box(
+            modifier = Modifier
+                .size(56.dp)
+                .background(MaterialTheme.colorScheme.surface, shape)
+                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, shape),
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun ClusterListPreview() {
+    ChacTheme {
+        val sampleMedia: (Int) -> List<MediaUiModel> = { count ->
+            List(count) { index ->
+                MediaUiModel(
+                    id = index.toLong(),
+                    uriString = "content://sample/$index",
+                    dateTaken = 0L,
+                    mediaType = MediaType.IMAGE,
+                )
+            }
+        }
+        val sampleClusters = listOf(
+            ClusterUiModel(
+                id = 1L,
+                title = "Jeju Trip",
+                mediaList = sampleMedia(34),
+            ),
+            ClusterUiModel(
+                id = 2L,
+                title = "서초동",
+                mediaList = sampleMedia(34),
+            ),
+        )
+        ClusterList(
+            clusters = sampleClusters,
+            isLoading = true,
+            onOpenGallery = {},
+        )
+    }
+}
