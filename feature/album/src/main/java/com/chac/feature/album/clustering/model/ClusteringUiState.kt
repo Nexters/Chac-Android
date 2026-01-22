@@ -4,9 +4,14 @@ import com.chac.feature.album.model.ClusterUiModel
 
 sealed interface ClusteringUiState {
     /**
-     * 화면에 표시할 클러스터 목록.
+     * 클러스터 목록을 포함하는 상태.
      */
-    val clusters: List<ClusterUiModel>
+    sealed interface WithClusters : ClusteringUiState {
+        /**
+         * 화면에 표시할 클러스터 목록.
+         */
+        val clusters: List<ClusterUiModel>
+    }
 
     /**
      * 로딩 중 상태.
@@ -15,7 +20,7 @@ sealed interface ClusteringUiState {
      */
     data class Loading(
         override val clusters: List<ClusterUiModel>,
-    ) : ClusteringUiState
+    ) : WithClusters
 
     /**
      * 로딩 완료 상태.
@@ -24,5 +29,15 @@ sealed interface ClusteringUiState {
      */
     data class Completed(
         override val clusters: List<ClusterUiModel>,
-    ) : ClusteringUiState
+    ) : WithClusters
+
+    /**
+     * 권한 확인 중 상태.
+     */
+    data object PermissionChecking : ClusteringUiState
+
+    /**
+     * 권한 거부 상태.
+     */
+    data object PermissionDenied : ClusteringUiState
 }

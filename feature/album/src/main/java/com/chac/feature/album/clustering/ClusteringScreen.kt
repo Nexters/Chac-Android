@@ -13,10 +13,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -33,6 +31,8 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.chac.core.designsystem.ui.theme.ChacTheme
 import com.chac.core.permission.MediaWithLocationPermissionUtil
+import com.chac.core.permission.MediaWithLocationPermissionUtil.launchMediaWithLocationPermission
+import com.chac.core.permission.compose.rememberRegisterMediaWithLocationPermission
 import com.chac.core.permission.compose.moveToPermissionSetting
 import com.chac.core.resources.R
 import com.chac.domain.album.media.MediaType
@@ -58,6 +58,32 @@ fun ClusteringRoute(
     viewModel: ClusteringViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
+    val permission = rememberRegisterMediaWithLocationPermission(
+        onGranted = { viewModel.onPermissionChanged(true) },
+        onDenied = { viewModel.onPermissionChanged(false) },
+        onPermanentlyDenied = { viewModel.onPermissionChanged(false) },
+    )
+
+    LaunchedEffect(Unit) {
+        val hasPermission = MediaWithLocationPermissionUtil.checkPermission(context)
+        viewModel.onPermissionChanged(hasPermission)
+        if (!hasPermission) {
+            permission.launchMediaWithLocationPermission()
+        }
+    }
+
+    DisposableEffect(lifecycleOwner, context) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                viewModel.onPermissionChanged(MediaWithLocationPermissionUtil.checkPermission(context))
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+
     ClusteringScreen(
         uiState = uiState,
         onOpenGallery = onOpenGallery,
@@ -69,37 +95,16 @@ fun ClusteringRoute(
  *
  * @param uiState 클러스터링 화면 상태
  * @param onOpenGallery 갤러리로 이동하는 콜백
- * @param forceHasPermission 미리보기에서 권한 상태를 강제할 값
  */
 @Composable
 private fun ClusteringScreen(
     uiState: ClusteringUiState,
     onOpenGallery: (List<String>) -> Unit,
-    forceHasPermission: Boolean? = null,
 ) {
     val context = LocalContext.current
-    val lifecycleOwner = LocalLifecycleOwner.current
-    val initialHasPermission = forceHasPermission ?: MediaWithLocationPermissionUtil.checkPermission(context)
-    var hasPermission by remember {
-        mutableStateOf(initialHasPermission)
-    }
 
-    if (forceHasPermission == null) {
-        DisposableEffect(lifecycleOwner, context) {
-            val observer =
-                LifecycleEventObserver { _, event ->
-                    if (event == Lifecycle.Event.ON_RESUME) {
-                        hasPermission = MediaWithLocationPermissionUtil.checkPermission(context)
-                    }
-                }
-            lifecycleOwner.lifecycle.addObserver(observer)
-            onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
-        }
-    }
-
-    val clusters = uiState.clusters
+    val clusters = (uiState as? ClusteringUiState.WithClusters)?.clusters.orEmpty()
     val totalCount = clusters.sumOf { it.mediaList.size }
-    val isLoading = uiState is ClusteringUiState.Loading
 
     Column(
         modifier = Modifier
@@ -118,27 +123,37 @@ private fun ClusteringScreen(
                 .weight(1f)
                 .fillMaxWidth(),
         ) {
-            when {
-                !hasPermission -> {
+            when (uiState) {
+                ClusteringUiState.PermissionChecking -> Unit
+
+                ClusteringUiState.PermissionDenied -> {
                     PermissionRequiredState(
                         onOpenSettings = { moveToPermissionSetting(context) },
                     )
                 }
 
-                clusters.isEmpty() && isLoading -> {
-                    LoadingState()
+                is ClusteringUiState.Loading -> {
+                    if (clusters.isEmpty()) {
+                        LoadingState()
+                    } else {
+                        ClusterList(
+                            clusters = clusters,
+                            isLoading = true,
+                            onOpenGallery = onOpenGallery,
+                        )
+                    }
                 }
 
-                clusters.isEmpty() -> {
-                    EmptyState()
-                }
-
-                else -> {
-                    ClusterList(
-                        clusters = clusters,
-                        isLoading = isLoading,
-                        onOpenGallery = onOpenGallery,
-                    )
+                is ClusteringUiState.Completed -> {
+                    if (clusters.isEmpty()) {
+                        EmptyState()
+                    } else {
+                        ClusterList(
+                            clusters = clusters,
+                            isLoading = false,
+                            onOpenGallery = onOpenGallery,
+                        )
+                    }
                 }
             }
         }
@@ -221,7 +236,6 @@ private fun ClusteringScreenPreview(
         ClusteringScreen(
             uiState = uiState,
             onOpenGallery = {},
-            forceHasPermission = true,
         )
     }
 }
@@ -251,9 +265,11 @@ private class ClusteringUiStatePreviewProvider : PreviewParameterProvider<Cluste
     )
 
     override val values: Sequence<ClusteringUiState> = sequenceOf(
+        ClusteringUiState.PermissionChecking,
         ClusteringUiState.Loading(emptyList()),
         ClusteringUiState.Loading(sampleClusters),
         ClusteringUiState.Completed(sampleClusters),
         ClusteringUiState.Completed(emptyList()),
+        ClusteringUiState.PermissionDenied,
     )
 }
