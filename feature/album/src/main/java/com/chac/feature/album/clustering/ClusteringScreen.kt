@@ -3,28 +3,48 @@ package com.chac.feature.album.clustering
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.tooling.preview.PreviewParameter
+import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.chac.core.designsystem.ui.theme.ChacTheme
+import com.chac.core.permission.MediaWithLocationPermissionUtil
 import com.chac.core.permission.MediaWithLocationPermissionUtil.launchMediaWithLocationPermission
-import com.chac.core.permission.compose.PermissionDeniedDialog
-import com.chac.core.permission.compose.moveToPermissionSetting
 import com.chac.core.permission.compose.rememberRegisterMediaWithLocationPermission
+import com.chac.core.permission.compose.moveToPermissionSetting
+import com.chac.core.resources.R
+import com.chac.domain.album.media.MediaType
+import com.chac.feature.album.clustering.component.AlbumSectionHeader
+import com.chac.feature.album.clustering.component.ClusterList
+import com.chac.feature.album.clustering.component.ClusteringTopBar
+import com.chac.feature.album.clustering.component.LoadingFooter
+import com.chac.feature.album.clustering.component.PlaceholderIcon
+import com.chac.feature.album.clustering.component.TotalPhotoSummary
+import com.chac.feature.album.clustering.model.ClusteringUiState
+import com.chac.feature.album.model.ClusterUiModel
+import com.chac.feature.album.model.MediaUiModel
 
 /**
  * 클러스터링 화면 라우트
@@ -37,10 +57,35 @@ fun ClusteringRoute(
     onOpenGallery: (List<String>) -> Unit,
     viewModel: ClusteringViewModel = hiltViewModel(),
 ) {
-    val mediaState by viewModel.mediaState
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
+    val permission = rememberRegisterMediaWithLocationPermission(
+        onGranted = { viewModel.onPermissionChanged(true) },
+        onDenied = { viewModel.onPermissionChanged(false) },
+        onPermanentlyDenied = { viewModel.onPermissionChanged(false) },
+    )
+
+    LaunchedEffect(Unit) {
+        val hasPermission = MediaWithLocationPermissionUtil.checkPermission(context)
+        viewModel.onPermissionChanged(hasPermission)
+        if (!hasPermission) {
+            permission.launchMediaWithLocationPermission()
+        }
+    }
+
+    DisposableEffect(lifecycleOwner, context) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                viewModel.onPermissionChanged(MediaWithLocationPermissionUtil.checkPermission(context))
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+
     ClusteringScreen(
-        clusters = viewModel.clusters,
-        media = mediaState,
+        uiState = uiState,
         onOpenGallery = onOpenGallery,
     )
 }
@@ -48,87 +93,183 @@ fun ClusteringRoute(
 /**
  * 클러스터링 목록 화면
  *
- * @param clusters 화면에 표시할 클러스터 목록
+ * @param uiState 클러스터링 화면 상태
  * @param onOpenGallery 갤러리로 이동하는 콜백
  */
 @Composable
 private fun ClusteringScreen(
-    clusters: List<ClusterItem>,
-    media: List<MediaUiModel>,
+    uiState: ClusteringUiState,
     onOpenGallery: (List<String>) -> Unit,
 ) {
+    val context = LocalContext.current
+
+    val clusters = (uiState as? ClusteringUiState.WithClusters)?.clusters.orEmpty()
+    val totalCount = clusters.sumOf { it.mediaList.size }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(24.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-        horizontalAlignment = Alignment.Start,
+            .padding(horizontal = 20.dp)
+            .padding(top = 16.dp),
     ) {
-        Text(text = "Clustering")
-        clusters.forEach { cluster ->
-            Button(onClick = { onOpenGallery(cluster.photos) }) {
-                Text(text = cluster.title)
+        ClusteringTopBar(label = stringResource(R.string.clustering_top_bar_label))
+        Spacer(modifier = Modifier.height(16.dp))
+        TotalPhotoSummary(totalCount = totalCount)
+        Spacer(modifier = Modifier.height(16.dp))
+        AlbumSectionHeader()
+        Spacer(modifier = Modifier.height(12.dp))
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth(),
+        ) {
+            when (uiState) {
+                ClusteringUiState.PermissionChecking -> Unit
+
+                ClusteringUiState.PermissionDenied -> {
+                    PermissionRequiredState(
+                        onOpenSettings = { moveToPermissionSetting(context) },
+                    )
+                }
+
+                is ClusteringUiState.Loading -> {
+                    if (clusters.isEmpty()) {
+                        LoadingState()
+                    } else {
+                        ClusterList(
+                            clusters = clusters,
+                            isLoading = true,
+                            onOpenGallery = onOpenGallery,
+                        )
+                    }
+                }
+
+                is ClusteringUiState.Completed -> {
+                    if (clusters.isEmpty()) {
+                        EmptyState()
+                    } else {
+                        ClusterList(
+                            clusters = clusters,
+                            isLoading = false,
+                            onOpenGallery = onOpenGallery,
+                        )
+                    }
+                }
             }
         }
-
-        LazyColumn {
-            items(items = media, key = { it.id }) {
-                Text(text = "id:${it.id}, uri:${it.uriString}")
-            }
-        }
-
-        PermissionSample()
     }
 }
 
+/** 로딩 상태 화면을 표시한다 */
 @Composable
-fun PermissionSample() {
-    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        var showPermissionDeniedDialog by remember { mutableStateOf(false) }
+private fun LoadingState() {
+    Column(
+        modifier = Modifier.fillMaxSize(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+    ) {
+        LoadingFooter()
+    }
+}
 
-        val permission =
-            rememberRegisterMediaWithLocationPermission(
-                onGranted = {},
-                onPermanentlyDenied = { showPermissionDeniedDialog = true },
-                onDenied = { showPermissionDeniedDialog = true },
-            )
+/** 빈 상태 화면을 표시한다 */
+@Composable
+private fun EmptyState() {
+    Column(
+        modifier = Modifier.fillMaxSize(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+    ) {
+        PlaceholderIcon()
+        Spacer(modifier = Modifier.height(12.dp))
+        Text(
+            text = stringResource(R.string.clustering_empty_title),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            text = stringResource(R.string.clustering_empty_message),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+        )
+    }
+}
 
-        Button(
-            onClick = {
-                permission.launchMediaWithLocationPermission()
-            },
-        ) {
-            Text("권한요청")
-        }
-
-        if (showPermissionDeniedDialog) {
-            val context = LocalContext.current
-            PermissionDeniedDialog(
-                title = "권한 필요",
-                message = "메시지",
-                onDismissRequest = {
-                    showPermissionDeniedDialog = false
-                },
-                onPositiveClick = {
-                    showPermissionDeniedDialog = false
-                    moveToPermissionSetting(context)
-                },
-            )
+/**
+ * 권한이 필요할 때 표시되는 상태 화면을 보여준다
+ *
+ * @param onOpenSettings 설정 화면으로 이동하는 콜백
+ */
+@Composable
+private fun PermissionRequiredState(
+    onOpenSettings: () -> Unit,
+) {
+    Column(
+        modifier = Modifier.fillMaxSize(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+    ) {
+        PlaceholderIcon()
+        Spacer(modifier = Modifier.height(12.dp))
+        Text(
+            text = stringResource(R.string.clustering_permission_message),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+        )
+        Spacer(modifier = Modifier.height(12.dp))
+        Button(onClick = onOpenSettings) {
+            Text(stringResource(R.string.clustering_permission_action))
         }
     }
 }
 
 @Preview(showBackground = true)
 @Composable
-private fun ClusteringScreenPreview() {
+private fun ClusteringScreenPreview(
+    @PreviewParameter(ClusteringUiStatePreviewProvider::class) uiState: ClusteringUiState,
+) {
     ChacTheme {
         ClusteringScreen(
-            clusters = listOf(
-                ClusterItem(title = "Cluster A", photos = listOf("A-1", "A-2")),
-                ClusterItem(title = "Cluster B", photos = listOf("B-1")),
-            ),
-            media = emptyList(),
+            uiState = uiState,
             onOpenGallery = {},
         )
     }
+}
+
+/** ClusteringScreen 프리뷰 상태를 제공한다 */
+private class ClusteringUiStatePreviewProvider : PreviewParameterProvider<ClusteringUiState> {
+    private val sampleMedia: List<MediaUiModel> = List(34) { index ->
+        MediaUiModel(
+            id = index.toLong(),
+            uriString = "content://sample/$index",
+            dateTaken = 0L,
+            mediaType = MediaType.IMAGE,
+        )
+    }
+
+    private val sampleClusters = listOf(
+        ClusterUiModel(
+            id = 1L,
+            title = "Jeju Trip",
+            mediaList = sampleMedia,
+        ),
+        ClusterUiModel(
+            id = 2L,
+            title = "서초동",
+            mediaList = sampleMedia,
+        ),
+    )
+
+    override val values: Sequence<ClusteringUiState> = sequenceOf(
+        ClusteringUiState.PermissionChecking,
+        ClusteringUiState.Loading(emptyList()),
+        ClusteringUiState.Loading(sampleClusters),
+        ClusteringUiState.Completed(sampleClusters),
+        ClusteringUiState.Completed(emptyList()),
+        ClusteringUiState.PermissionDenied,
+    )
 }

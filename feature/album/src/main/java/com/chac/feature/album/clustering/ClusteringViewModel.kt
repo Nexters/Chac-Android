@@ -1,12 +1,16 @@
 package com.chac.feature.album.clustering
 
-import androidx.compose.runtime.Immutable
-import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.chac.domain.album.media.Media
-import com.chac.domain.album.media.MediaRepository
+import com.chac.domain.album.media.GetClusteredMediaStreamUseCase
+import com.chac.feature.album.clustering.model.ClusteringUiState
+import com.chac.feature.album.clustering.model.toUiModel
+import com.chac.feature.album.model.ClusterUiModel
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -15,49 +19,70 @@ import javax.inject.Inject
 class ClusteringViewModel
     @Inject
     constructor(
-        private val mediaRepository: MediaRepository,
+        private val getClusteredMediaStreamUseCase: GetClusteredMediaStreamUseCase,
     ) : ViewModel() {
-        /** 클러스터링 목록에 표시할 임시 데이터 */
-        val clusters = listOf(
-            ClusterItem(
-                title = "Cluster 1",
-                photos = listOf("Photo 1-1", "Photo 1-2", "Photo 1-3"),
-            ),
-            ClusterItem(
-                title = "Cluster 2",
-                photos = listOf("Photo 2-1", "Photo 2-2"),
-            ),
-            ClusterItem(
-                title = "Cluster 3",
-                photos = listOf("Photo 3-1"),
-            ),
-        )
 
-        val mediaState = mutableStateOf(emptyList<MediaUiModel>())
+        /** 클러스터링 화면의 상태 */
+        private val _uiState = MutableStateFlow<ClusteringUiState>(ClusteringUiState.PermissionChecking)
+        val uiState: StateFlow<ClusteringUiState> = _uiState.asStateFlow()
 
-        init {
-            viewModelScope.launch {
-                val clusters = mediaRepository.getClusteredMedia()
-                mediaState.value = clusters.values.flatten().map(Media::toUiModel)
+        /**
+         * 클러스터 스트림 수집의 예외 처리를 위한 Job
+         *
+         * 1. 클러스터 스트림 중복 수집 방지
+         * 2. 수집이 진행중일 때 권한이 거절되면 캔슬
+         */
+        private var clusterCollectJob: Job? = null
+
+        /**
+         * 권한 변경 결과를 반영해 UI 상태와 스트림 수집을 갱신한다.
+         *
+         * @param hasPermission 권한 허용 여부
+         */
+        fun onPermissionChanged(hasPermission: Boolean) {
+            if (!hasPermission) {
+                clusterCollectJob?.cancel()
+                clusterCollectJob = null
+                _uiState.value = ClusteringUiState.PermissionDenied
+                return
+            }
+
+            // 권한이 이미 허용된 상태라면 수집을 다시 시작하지 않는다.
+            if (_uiState.value is ClusteringUiState.WithClusters) return
+            if (clusterCollectJob != null) return
+
+            refreshClusters()
+        }
+
+        /**
+         * 클러스터 스트림 수집을 수집하고 상태를 갱신한다.
+         */
+        private fun refreshClusters() {
+            clusterCollectJob = viewModelScope.launch {
+                try {
+                    _uiState.value = ClusteringUiState.Loading(emptyList())
+
+                    // 클러스터 스트림을 수집하며 로딩 상태에 누적한다.
+                    getClusteredMediaStreamUseCase().collect { cluster ->
+                        val updatedClusters = currentClusters() + cluster.toUiModel()
+                        _uiState.value = ClusteringUiState.Loading(updatedClusters)
+                    }
+
+                    // 클러스터링이 완료 되면 Completed 상태로 변경
+                    _uiState.value = ClusteringUiState.Completed(currentClusters())
+                } finally {
+                    clusterCollectJob = null
+                }
             }
         }
+
+        /**
+         * 현재 UI 상태에 포함된 클러스터 목록을 가져온다.
+         */
+        private fun currentClusters(): List<ClusterUiModel> =
+            when (val state = _uiState.value) {
+                is ClusteringUiState.WithClusters -> state.clusters
+                ClusteringUiState.PermissionChecking,
+                ClusteringUiState.PermissionDenied -> emptyList()
+            }
     }
-
-/**
- * (임시) 클러스터링 화면에서 사용하는 간단한 클러스터 모델
- *
- * @param title 클러스터 제목
- * @param photos 클러스터에 포함된 사진 목록
- */
-data class ClusterItem(
-    val title: String,
-    val photos: List<String>,
-)
-
-@Immutable
-data class MediaUiModel(
-    val id: Long,
-    val uriString: String,
-)
-
-private fun Media.toUiModel(): MediaUiModel = MediaUiModel(id = id, uriString = uriString)
