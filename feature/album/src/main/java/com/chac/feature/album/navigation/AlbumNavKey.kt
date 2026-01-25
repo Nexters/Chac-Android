@@ -22,4 +22,16 @@ sealed interface AlbumNavKey : NavKey {
         val title: String,
         val mediaList: List<MediaUiModel>,
     ) : AlbumNavKey
+
+    /**
+     * 앨범 저장 완료 화면
+     *
+     * @param title 저장된 앨범 제목
+     * @param savedCount 저장된 사진 개수
+     */
+    @Serializable
+    data class SaveCompleted(
+        val title: String,
+        val savedCount: Int,
+    ) : AlbumNavKey
 }

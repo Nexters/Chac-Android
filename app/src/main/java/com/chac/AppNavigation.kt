@@ -46,6 +46,12 @@ fun ChacAppNavigation() {
                     onOpenGallery = { title, mediaList ->
                         backStack.add(AlbumNavKey.Gallery(title, mediaList))
                     },
+                    onOpenSaveCompleted = { title, savedCount ->
+                        backStack.add(AlbumNavKey.SaveCompleted(title, savedCount))
+                    },
+                    onCloseSaveCompleted = { backStack.popToClustering() },
+                    onPopToGallery = { backStack.pop() },
+                    onPopToClustering = { backStack.popToClustering() },
                     onBack = { backStack.pop() },
                 )
             },
@@ -56,6 +62,13 @@ fun ChacAppNavigation() {
 /** 내비게이션 백스택을 pop 한다 */
 private fun NavBackStack<NavKey>.pop() {
     if (size > 1) {
+        removeLastOrNull()
+    }
+}
+
+/** 클러스터링 화면까지 백스택을 정리한다 */
+private fun NavBackStack<NavKey>.popToClustering() {
+    while (size > 1 && lastOrNull() !is AlbumNavKey.Clustering) {
         removeLastOrNull()
     }
 }

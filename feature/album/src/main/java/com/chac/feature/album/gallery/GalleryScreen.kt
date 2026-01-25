@@ -1,5 +1,6 @@
 package com.chac.feature.album.gallery
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -43,12 +44,11 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.activity.compose.BackHandler
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.chac.core.designsystem.ui.theme.ChacTheme
 import com.chac.core.resources.R
-import androidx.compose.ui.window.Dialog
 import com.chac.domain.album.media.MediaType
 import com.chac.feature.album.gallery.model.GalleryUiState
 import com.chac.feature.album.model.MediaUiModel
@@ -59,12 +59,14 @@ import com.chac.feature.album.model.MediaUiModel
  * @param title 화면에 표시할 앨범 제목
  * @param mediaList 화면에 표시할 미디어 목록
  * @param onBack 뒤로가기 동작을 전달하는 콜백
+ * @param onClickSave 저장 버튼 클릭 콜백
  * @param viewModel 갤러리 화면 ViewModel
  */
 @Composable
 fun GalleryRoute(
     title: String,
     mediaList: List<MediaUiModel>,
+    onClickSave: (Set<Long>) -> Unit,
     onBack: () -> Unit,
     viewModel: GalleryViewModel = viewModel(factory = GalleryViewModel.provideFactory(title, mediaList)),
 ) {
@@ -74,6 +76,7 @@ fun GalleryRoute(
         onToggleMedia = viewModel::toggleSelection,
         onSelectAll = viewModel::selectAll,
         onClearSelection = viewModel::clearSelection,
+        onClickSave = onClickSave,
         onBack = onBack,
     )
 }
@@ -85,6 +88,7 @@ fun GalleryRoute(
  * @param onToggleMedia 미디어 선택 상태 토글 콜백
  * @param onSelectAll 전체 선택 콜백
  * @param onClearSelection 전체 선택 해제 콜백
+ * @param onClickSave 저장 버튼 클릭 콜백
  * @param onBack 뒤로가기 동작을 전달하는 콜백
  */
 @Composable
@@ -93,6 +97,7 @@ private fun GalleryScreen(
     onToggleMedia: (MediaUiModel) -> Unit,
     onSelectAll: () -> Unit,
     onClearSelection: () -> Unit,
+    onClickSave: (Set<Long>) -> Unit,
     onBack: () -> Unit,
 ) {
     var isExitDialogVisible by remember { mutableStateOf(false) }
@@ -182,7 +187,7 @@ private fun GalleryScreen(
         }
         Spacer(modifier = Modifier.height(12.dp))
         Button(
-            onClick = {},
+            onClick = { onClickSave(selectedMediaIds) },
             modifier = Modifier
                 .fillMaxWidth()
                 .height(52.dp),
@@ -400,6 +405,7 @@ private fun GalleryScreenPreview() {
             onToggleMedia = {},
             onSelectAll = {},
             onClearSelection = {},
+            onClickSave = {},
             onBack = {},
         )
     }
