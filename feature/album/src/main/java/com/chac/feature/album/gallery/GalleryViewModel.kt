@@ -3,6 +3,7 @@ package com.chac.feature.album.gallery
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.chac.feature.album.gallery.model.GalleryUiState
+import com.chac.feature.album.model.ClusterUiModel
 import com.chac.feature.album.model.MediaUiModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -10,13 +11,11 @@ import kotlinx.coroutines.flow.asStateFlow
 
 /** 갤러리 화면 상태를 제공하는 ViewModel */
 class GalleryViewModel(
-    /** 갤러리 화면에 표시할 앨범 제목 */
-    private val title: String,
-    /** 갤러리 화면에 표시할 미디어 목록 */
-    private val mediaList: List<MediaUiModel>,
+    /** 갤러리 화면에 표시할 클러스터 */
+    private val cluster: ClusterUiModel,
 ) : ViewModel() {
     /** 갤러리 화면 UI 상태 */
-    private val _uiState = MutableStateFlow<GalleryUiState>(GalleryUiState.NoneSelected(title, mediaList))
+    private val _uiState = MutableStateFlow<GalleryUiState>(GalleryUiState.NoneSelected(cluster))
     val uiState: StateFlow<GalleryUiState> = _uiState.asStateFlow()
 
     /**
@@ -35,9 +34,9 @@ class GalleryViewModel(
             selected + media.id
         }
         _uiState.value = if (updatedSelected.isEmpty()) {
-            GalleryUiState.NoneSelected(title, mediaList)
+            GalleryUiState.NoneSelected(cluster)
         } else {
-            GalleryUiState.SomeSelected(title, mediaList, updatedSelected)
+            GalleryUiState.SomeSelected(cluster, updatedSelected)
         }
     }
 
@@ -45,32 +44,30 @@ class GalleryViewModel(
      * 모든 미디어를 선택 상태로 만든다
      */
     fun selectAll() {
-        val updatedSelected = mediaList.map { it.id }.toSet()
+        val updatedSelected = cluster.mediaList.map { it.id }.toSet()
         _uiState.value = if (updatedSelected.isEmpty()) {
-            GalleryUiState.NoneSelected(title, mediaList)
+            GalleryUiState.NoneSelected(cluster)
         } else {
-            GalleryUiState.SomeSelected(title, mediaList, updatedSelected)
+            GalleryUiState.SomeSelected(cluster, updatedSelected)
         }
     }
 
     /** 선택된 미디어를 모두 해제한다 */
     fun clearSelection() {
-        _uiState.value = GalleryUiState.NoneSelected(title, mediaList)
+        _uiState.value = GalleryUiState.NoneSelected(cluster)
     }
 
     companion object {
         /**
          * 화면 인자를 전달하기 위한 ViewModel Factory
          *
-         * @param title 갤러리 화면에 표시할 앨범 제목
-         * @param mediaList 갤러리 화면에 표시할 미디어 목록
+         * @param cluster 갤러리 화면에 표시할 클러스터
          */
         fun provideFactory(
-            title: String,
-            mediaList: List<MediaUiModel>,
+            cluster: ClusterUiModel,
         ): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
-            override fun <T : ViewModel> create(modelClass: Class<T>): T = GalleryViewModel(title, mediaList) as T
+            override fun <T : ViewModel> create(modelClass: Class<T>): T = GalleryViewModel(cluster) as T
         }
     }
 }

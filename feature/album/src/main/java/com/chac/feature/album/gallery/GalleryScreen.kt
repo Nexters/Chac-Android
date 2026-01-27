@@ -51,24 +51,23 @@ import com.chac.core.designsystem.ui.theme.ChacTheme
 import com.chac.core.resources.R
 import com.chac.domain.album.media.MediaType
 import com.chac.feature.album.gallery.model.GalleryUiState
+import com.chac.feature.album.model.ClusterUiModel
 import com.chac.feature.album.model.MediaUiModel
 
 /**
  * 갤러리 화면 라우트
  *
- * @param title 화면에 표시할 앨범 제목
- * @param mediaList 화면에 표시할 미디어 목록
+ * @param cluster 화면에 표시할 클러스터
  * @param onBack 뒤로가기 동작을 전달하는 콜백
  * @param onClickSave 저장 버튼 클릭 콜백
  * @param viewModel 갤러리 화면 ViewModel
  */
 @Composable
 fun GalleryRoute(
-    title: String,
-    mediaList: List<MediaUiModel>,
+    cluster: ClusterUiModel,
     onClickSave: (Set<Long>) -> Unit,
     onBack: () -> Unit,
-    viewModel: GalleryViewModel = viewModel(factory = GalleryViewModel.provideFactory(title, mediaList)),
+    viewModel: GalleryViewModel = viewModel(factory = GalleryViewModel.provideFactory(cluster)),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     GalleryScreen(
@@ -101,9 +100,12 @@ private fun GalleryScreen(
     onBack: () -> Unit,
 ) {
     var isExitDialogVisible by remember { mutableStateOf(false) }
-    val (title, mediaList, selectedMediaIds) = when (uiState) {
-        is GalleryUiState.NoneSelected -> Triple(uiState.title, uiState.mediaList, emptySet())
-        is GalleryUiState.SomeSelected -> Triple(uiState.title, uiState.mediaList, uiState.selectedIds)
+    val cluster = uiState.cluster
+    val title = cluster.title
+    val mediaList = cluster.mediaList
+    val selectedMediaIds = when (uiState) {
+        is GalleryUiState.SomeSelected -> uiState.selectedIds
+        is GalleryUiState.NoneSelected -> emptySet()
     }
     val totalCount = mediaList.size
     val selectedCount = selectedMediaIds.size
@@ -392,15 +394,18 @@ private fun GalleryScreenPreview() {
     ChacTheme {
         GalleryScreen(
             uiState = GalleryUiState.NoneSelected(
-                title = "Jeju Trip",
-                mediaList = List(40) { index ->
-                    MediaUiModel(
-                        id = index.toLong(),
-                        uriString = "content://sample/$index",
-                        dateTaken = 0L,
-                        mediaType = MediaType.IMAGE,
-                    )
-                },
+                cluster = ClusterUiModel(
+                    id = 1L,
+                    title = "Jeju Trip",
+                    mediaList = List(40) { index ->
+                        MediaUiModel(
+                            id = index.toLong(),
+                            uriString = "content://sample/$index",
+                            dateTaken = 0L,
+                            mediaType = MediaType.IMAGE,
+                        )
+                    },
+                ),
             ),
             onToggleMedia = {},
             onSelectAll = {},

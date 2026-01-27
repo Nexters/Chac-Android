@@ -49,7 +49,7 @@ fun ClusterList(
     clusters: List<ClusterUiModel>,
     isLoading: Boolean,
     modifier: Modifier = Modifier,
-    onOpenGallery: (String, List<MediaUiModel>) -> Unit,
+    onOpenGallery: (ClusterUiModel) -> Unit,
 ) {
     LazyColumn(
         modifier = modifier.fillMaxSize(),
@@ -80,7 +80,7 @@ fun ClusterList(
 private fun ClusterCard(
     cluster: ClusterUiModel,
     modifier: Modifier = Modifier,
-    onOpenGallery: (String, List<MediaUiModel>) -> Unit,
+    onOpenGallery: (ClusterUiModel) -> Unit,
 ) {
     Card(
         modifier = modifier.fillMaxWidth(),
@@ -121,10 +121,7 @@ private fun ClusterCard(
                 Spacer(modifier = Modifier.height(4.dp))
                 Button(
                     onClick = {
-                        onOpenGallery(
-                            displayTitle,
-                            cluster.mediaList,
-                        )
+                        onOpenGallery(cluster)
                     },
                     modifier = Modifier.widthIn(min = 140.dp),
                 ) {
@@ -200,7 +197,7 @@ private fun ClusterListPreview() {
         ClusterList(
             clusters = sampleClusters,
             isLoading = true,
-            onOpenGallery = { _, _ -> },
+            onOpenGallery = {},
         )
     }
 }
