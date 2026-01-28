@@ -7,6 +7,7 @@ import android.database.Cursor
 import android.net.Uri
 import android.os.Environment
 import android.provider.MediaStore
+import android.util.Log
 import androidx.core.net.toUri
 import com.chac.domain.album.media.Media
 import com.chac.domain.album.media.MediaLocation
@@ -239,7 +240,11 @@ internal class MediaDataSource @Inject constructor(
                 true
             } ?: false
         } ?: false
-    }.getOrDefault(false)
+    }.getOrElse{
+        Log.d("12341234", "copyToAlbum: ")
+        it.printStackTrace()
+        false
+    }
 
     /**
      * 미디어를 지정한 상대 경로로 이동한다
@@ -256,7 +261,11 @@ internal class MediaDataSource @Inject constructor(
             put(MediaStore.MediaColumns.RELATIVE_PATH, relativePath)
         }
         contentResolver.update(sourceUri, contentValues, null, null) > 0
-    }.getOrDefault(false)
+    }.getOrElse{
+        Log.d("12341234", "moveToAlbum: ")
+        it.printStackTrace()
+        false
+    }
 
     /**
      * 원본 미디어를 삭제한다
@@ -264,7 +273,10 @@ internal class MediaDataSource @Inject constructor(
      * @param sourceUri 삭제할 미디어 URI
      */
     private fun deleteSource(sourceUri: Uri) {
-        runCatching { contentResolver.delete(sourceUri, null, null) }
+        runCatching { contentResolver.delete(sourceUri, null, null) }.getOrElse {
+            Log.d("12341234", "deleteSource: ")
+            it.printStackTrace()
+        }
     }
 
     /**

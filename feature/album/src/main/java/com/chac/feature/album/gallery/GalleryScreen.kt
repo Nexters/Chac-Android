@@ -1,6 +1,12 @@
 package com.chac.feature.album.gallery
 
+import android.app.Activity
+import android.os.Build
+import android.provider.MediaStore
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.IntentSenderRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -41,14 +47,17 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import androidx.core.net.toUri
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.chac.core.designsystem.ui.theme.ChacTheme
+import com.chac.core.permission.compose.rememberRegisterMediaWithLocationPermission
 import com.chac.core.resources.R
 import com.chac.domain.album.media.MediaType
 import com.chac.feature.album.gallery.model.GalleryUiState
@@ -71,6 +80,26 @@ fun GalleryRoute(
     onBack: () -> Unit,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+
+    val selectedMedia = when (val uiState = uiState) {
+        is GalleryUiState.SomeSelected -> uiState.selectedIds
+            .let { selectedIds -> uiState.cluster.mediaList.filter { it.id in selectedIds } }
+
+        is GalleryUiState.Saving -> uiState.selectedIds
+            .let { selectedIds -> uiState.cluster.mediaList.filter { it.id in selectedIds } }
+
+        else -> emptyList()
+    }
+
+    val writeRequestLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartIntentSenderForResult(),
+        onResult = { result ->
+            if (result.resultCode == Activity.RESULT_OK) {
+                viewModel.saveSelectedMedia()
+            }
+        },
+    )
 
     LaunchedEffect(viewModel) {
         viewModel.initialize(cluster)
@@ -85,7 +114,19 @@ fun GalleryRoute(
         onToggleMedia = viewModel::toggleSelection,
         onSelectAll = viewModel::selectAll,
         onClearSelection = viewModel::clearSelection,
-        onSave = viewModel::saveSelectedMedia,
+        onSave = {
+            if (selectedMedia.isEmpty()) return@GalleryScreen
+
+            val uris = selectedMedia.map { it.uriString.toUri() }
+            val intentSender = MediaStore.createWriteRequest(
+                context.contentResolver,
+                uris,
+            ).intentSender
+
+            writeRequestLauncher.launch(
+                IntentSenderRequest.Builder(intentSender).build(),
+            )
+        },
         onBack = onBack,
     )
 }
