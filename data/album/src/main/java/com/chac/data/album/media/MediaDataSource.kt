@@ -86,16 +86,20 @@ internal class MediaDataSource @Inject constructor(
                     // DATE_TAKEN이 유효하지 않은 경우 무시
                     if (dateTaken <= 0) continue
 
-                    val uri = ContentUris.withAppendedId(
-                        MediaStore.Files.getContentUri(MediaStore.VOLUME_EXTERNAL),
-                        id,
-                    )
-
                     val type = when (mediaTypeValue) {
                         MediaStore.Files.FileColumns.MEDIA_TYPE_IMAGE -> MediaType.IMAGE
                         MediaStore.Files.FileColumns.MEDIA_TYPE_VIDEO -> MediaType.VIDEO
                         else -> MediaType.IMAGE
                     }
+                    val collection = when (type) {
+                        MediaType.IMAGE -> MediaStore.Images.Media.EXTERNAL_CONTENT_URI
+                        MediaType.VIDEO -> MediaStore.Video.Media.EXTERNAL_CONTENT_URI
+                        MediaType.ALL -> MediaStore.Files.getContentUri(MediaStore.VOLUME_EXTERNAL)
+                    }
+                    val uri = ContentUris.withAppendedId(
+                        collection,
+                        id,
+                    )
 
                     items.add(
                         Media(

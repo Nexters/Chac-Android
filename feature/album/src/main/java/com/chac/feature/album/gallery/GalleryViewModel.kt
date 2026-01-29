@@ -129,6 +129,21 @@ class GalleryViewModel @Inject constructor(
     }
 
     /**
+     * 현재 선택된 미디어 목록을 반환한다.
+     */
+    fun getSelectedMediaList(): List<MediaUiModel> {
+        val state = _uiState.value
+
+        val selectedIds = when (state) {
+            is GalleryUiState.SomeSelected -> state.selectedIds
+            is GalleryUiState.Saving -> state.selectedIds
+            else -> emptySet()
+        }
+        if (selectedIds.isEmpty()) return emptyList()
+        return state.cluster.mediaList.filter { it.id in selectedIds }
+    }
+
+    /**
      * 캐시 스냅샷을 수집하고 변경이 발생하면 최신 상태로 동기화한다.
      */
     private fun observeClusterState() {

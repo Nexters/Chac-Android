@@ -1,5 +1,6 @@
 package com.chac.feature.album.gallery
 
+import android.provider.MediaStore
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -41,14 +42,17 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import androidx.core.net.toUri
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.chac.core.designsystem.ui.theme.ChacTheme
+import com.chac.core.permission.compose.rememberWriteRequestLauncher
 import com.chac.core.resources.R
 import com.chac.domain.album.media.MediaType
 import com.chac.feature.album.gallery.model.GalleryUiState
@@ -71,6 +75,11 @@ fun GalleryRoute(
     onBack: () -> Unit,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+
+    val writeRequestLauncher = rememberWriteRequestLauncher(
+        onGranted = { viewModel.saveSelectedMedia() },
+    )
 
     LaunchedEffect(viewModel) {
         viewModel.initialize(cluster)
@@ -85,7 +94,19 @@ fun GalleryRoute(
         onToggleMedia = viewModel::toggleSelection,
         onSelectAll = viewModel::selectAll,
         onClearSelection = viewModel::clearSelection,
-        onSave = viewModel::saveSelectedMedia,
+        onSave = {
+            val selectedMediaList = viewModel.getSelectedMediaList()
+
+            if (selectedMediaList.isEmpty()) return@GalleryScreen
+
+            val uris = selectedMediaList.map { it.uriString.toUri() }
+            val intentSender = MediaStore.createWriteRequest(
+                context.contentResolver,
+                uris,
+            ).intentSender
+
+            writeRequestLauncher(intentSender)
+        },
         onBack = onBack,
     )
 }

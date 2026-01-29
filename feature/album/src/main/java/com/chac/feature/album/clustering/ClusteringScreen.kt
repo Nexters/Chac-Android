@@ -1,5 +1,6 @@
 package com.chac.feature.album.clustering
 
+import android.provider.MediaStore
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,6 +16,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -24,6 +28,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
+import androidx.core.net.toUri
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -34,6 +39,7 @@ import com.chac.core.permission.MediaWithLocationPermissionUtil
 import com.chac.core.permission.MediaWithLocationPermissionUtil.launchMediaWithLocationPermission
 import com.chac.core.permission.compose.moveToPermissionSetting
 import com.chac.core.permission.compose.rememberRegisterMediaWithLocationPermission
+import com.chac.core.permission.compose.rememberWriteRequestLauncher
 import com.chac.core.resources.R
 import com.chac.domain.album.media.MediaType
 import com.chac.feature.album.clustering.component.AlbumSectionHeader
@@ -60,10 +66,17 @@ fun ClusteringRoute(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
+    var pendingWriteCluster by remember { mutableStateOf<ClusterUiModel?>(null) }
     val permission = rememberRegisterMediaWithLocationPermission(
         onGranted = { viewModel.onPermissionChanged(true) },
         onDenied = { viewModel.onPermissionChanged(false) },
         onPermanentlyDenied = { viewModel.onPermissionChanged(false) },
+    )
+    val writeRequestLauncher = rememberWriteRequestLauncher(
+        onGranted = {
+            pendingWriteCluster?.let(viewModel::onClickSaveAll)
+        },
+        onDenied = { },
     )
 
     LaunchedEffect(Unit) {
@@ -87,7 +100,18 @@ fun ClusteringRoute(
     ClusteringScreen(
         uiState = uiState,
         onClickSavePartial = onClickSavePartial,
-        onClickSaveAll = viewModel::onClickSaveAll,
+        onClickSaveAll = { cluster ->
+            if (cluster.mediaList.isEmpty()) return@ClusteringScreen
+
+            val uris = cluster.mediaList.map { it.uriString.toUri() }
+            val intentSender = MediaStore.createWriteRequest(
+                context.contentResolver,
+                uris,
+            ).intentSender
+
+            pendingWriteCluster = cluster
+            writeRequestLauncher(intentSender)
+        },
     )
 }
 
@@ -143,7 +167,7 @@ private fun ClusteringScreen(
                             clusters = clusters,
                             isLoading = true,
                             onClickSavePartial = onClickSavePartial,
-                            onClickSaveAll = {},
+                            onClickSaveAll = onClickSaveAll,
                         )
                     }
                 }
@@ -156,7 +180,7 @@ private fun ClusteringScreen(
                             clusters = clusters,
                             isLoading = false,
                             onClickSavePartial = onClickSavePartial,
-                            onClickSaveAll = {},
+                            onClickSaveAll = onClickSaveAll,
                         )
                     }
                 }
