@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.chac.domain.album.media.GetClusteredMediaStateUseCase
 import com.chac.domain.album.media.SaveAlbumUseCase
+import com.chac.feature.album.clustering.model.SaveUiStatus
 import com.chac.feature.album.clustering.model.toUiModel
 import com.chac.feature.album.gallery.model.GalleryUiState
 import com.chac.feature.album.gallery.model.SaveCompletedEvent
@@ -166,6 +167,7 @@ class GalleryViewModel @Inject constructor(
             id = 0L,
             title = "",
             mediaList = emptyList(),
+            saveStatus = SaveUiStatus.Default,
         )
     }
 }

@@ -34,6 +34,7 @@ import androidx.compose.ui.unit.dp
 import com.chac.core.designsystem.ui.theme.ChacTheme
 import com.chac.core.resources.R
 import com.chac.domain.album.media.MediaType
+import com.chac.feature.album.clustering.model.SaveUiStatus
 import com.chac.feature.album.model.ClusterUiModel
 import com.chac.feature.album.model.MediaUiModel
 
@@ -87,55 +88,94 @@ private fun ClusterCard(
     onClickSavePartial: () -> Unit,
     onClickSaveAll: () -> Unit,
 ) {
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant,
-        ),
-        shape = RoundedCornerShape(12.dp),
-    ) {
-        val defaultTitle = stringResource(R.string.clustering_default_album_title)
-        val displayTitle = cluster.title.ifBlank { defaultTitle }
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
+    val isDimmed = cluster.saveStatus != SaveUiStatus.Default
+    val cardShape = RoundedCornerShape(12.dp)
+    val badgeText = when (cluster.saveStatus) {
+        SaveUiStatus.SaveCompleted -> stringResource(R.string.clustering_save_completed_badge)
+        SaveUiStatus.Saving -> stringResource(R.string.clustering_saveing_badge)
+        SaveUiStatus.Default -> null
+    }
+
+    Box(modifier = modifier.fillMaxWidth()) {
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant,
+            ),
+            shape = cardShape,
         ) {
-            ClusterThumbnailStack()
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(6.dp),
+            val defaultTitle = stringResource(R.string.clustering_default_album_title)
+            val displayTitle = cluster.title.ifBlank { defaultTitle }
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                ClusterThumbnailStack()
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    Text(
+                        text = displayTitle,
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Text(
+                        text = stringResource(
+                            R.string.clustering_photo_count,
+                            formatCount(cluster.mediaList.size),
+                        ),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Button(
+                        onClick = onClickSavePartial,
+                        modifier = Modifier.widthIn(min = 140.dp),
+                        enabled = !isDimmed,
+                    ) {
+                        Text(text = stringResource(R.string.clustering_action_organize))
+                    }
+                    TextButton(
+                        onClick = onClickSaveAll,
+                        modifier = Modifier.align(Alignment.Start),
+                        enabled = !isDimmed,
+                    ) {
+                        Text(text = stringResource(R.string.clustering_action_keep))
+                    }
+                }
+            }
+        }
+
+        if (isDimmed) {
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .background(MaterialTheme.colorScheme.scrim.copy(alpha = 0.45f), cardShape),
+            )
+        }
+
+        if (badgeText != null) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .padding(start = 16.dp, top = 12.dp)
+                    .background(
+                        color = MaterialTheme.colorScheme.surface,
+                        shape = RoundedCornerShape(6.dp),
+                    )
+                    .padding(horizontal = 8.dp, vertical = 4.dp),
             ) {
                 Text(
-                    text = displayTitle,
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Text(
-                    text = stringResource(
-                        R.string.clustering_photo_count,
-                        formatCount(cluster.mediaList.size),
-                    ),
-                    style = MaterialTheme.typography.bodySmall,
+                    text = badgeText,
+                    style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                Spacer(modifier = Modifier.height(4.dp))
-                Button(
-                    onClick = onClickSavePartial,
-                    modifier = Modifier.widthIn(min = 140.dp),
-                ) {
-                    Text(text = stringResource(R.string.clustering_action_organize))
-                }
-                TextButton(
-                    onClick = onClickSaveAll,
-                    modifier = Modifier.align(Alignment.Start),
-                ) {
-                    Text(text = stringResource(R.string.clustering_action_keep))
-                }
             }
         }
     }
@@ -190,11 +230,13 @@ private fun ClusterListPreview() {
                 id = 1L,
                 title = "Jeju Trip",
                 mediaList = sampleMedia(34),
+                saveStatus = SaveUiStatus.Default,
             ),
             ClusterUiModel(
                 id = 2L,
                 title = "서초동",
                 mediaList = sampleMedia(34),
+                saveStatus = SaveUiStatus.SaveCompleted,
             ),
         )
         ClusterList(

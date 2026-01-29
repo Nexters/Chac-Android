@@ -9,6 +9,8 @@
     <string name="clustering_photo_count">%1$s장의 사진</string>
     <string name="clustering_action_organize">사진 정리하기</string>
     <string name="clustering_action_keep">그대로 저장</string>
+    <string name="clustering_saveing_badge">저장 중…</string>
+    <string name="clustering_save_completed_badge">저장 완료</string>
     <string name="clustering_loading_message">앨범을 생성하는 중입니다.\n잠시만 기다려주세요!</string>
     <string name="clustering_placeholder_icon">ICON</string>
     <string name="clustering_empty_title">정리할 사진이 없습니다.</string>

@@ -49,6 +49,7 @@ import com.chac.feature.album.clustering.component.LoadingFooter
 import com.chac.feature.album.clustering.component.PlaceholderIcon
 import com.chac.feature.album.clustering.component.TotalPhotoSummary
 import com.chac.feature.album.clustering.model.ClusteringUiState
+import com.chac.feature.album.clustering.model.SaveUiStatus
 import com.chac.feature.album.model.ClusterUiModel
 import com.chac.feature.album.model.MediaUiModel
 
@@ -286,11 +287,13 @@ private class ClusteringUiStatePreviewProvider : PreviewParameterProvider<Cluste
             id = 1L,
             title = "Jeju Trip",
             mediaList = sampleMedia,
+            saveStatus = SaveUiStatus.Default,
         ),
         ClusterUiModel(
             id = 2L,
             title = "서초동",
             mediaList = sampleMedia,
+            saveStatus = SaveUiStatus.SaveCompleted,
         ),
     )
 
