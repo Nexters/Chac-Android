@@ -1,6 +1,7 @@
 package com.chac.feature.album.clustering.model
 
 import com.chac.domain.album.media.MediaCluster
+import com.chac.domain.album.media.SaveStatus
 import com.chac.feature.album.model.ClusterUiModel
 import com.chac.feature.album.model.toUiModel
 
@@ -14,4 +15,9 @@ internal fun MediaCluster.toUiModel(): ClusterUiModel = ClusterUiModel(
     id = id,
     title = title,
     mediaList = mediaList.map { it.toUiModel() },
+    saveStatus = when (saveStatus) {
+        SaveStatus.Default -> SaveUiStatus.Default
+        SaveStatus.Saving -> SaveUiStatus.Saving
+        SaveStatus.SaveCompleted -> SaveUiStatus.SaveCompleted
+    },
 )

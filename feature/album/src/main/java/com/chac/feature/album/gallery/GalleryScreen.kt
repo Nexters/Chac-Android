@@ -1,5 +1,7 @@
 package com.chac.feature.album.gallery
 
+import android.provider.MediaStore
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -32,6 +34,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -39,41 +42,72 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.activity.compose.BackHandler
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.ui.window.Dialog
+import androidx.core.net.toUri
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.chac.core.designsystem.ui.theme.ChacTheme
+import com.chac.core.permission.compose.rememberWriteRequestLauncher
 import com.chac.core.resources.R
-import androidx.compose.ui.window.Dialog
 import com.chac.domain.album.media.MediaType
+import com.chac.feature.album.clustering.model.SaveUiStatus
 import com.chac.feature.album.gallery.model.GalleryUiState
+import com.chac.feature.album.model.ClusterUiModel
 import com.chac.feature.album.model.MediaUiModel
 
 /**
  * 갤러리 화면 라우트
  *
- * @param title 화면에 표시할 앨범 제목
- * @param mediaList 화면에 표시할 미디어 목록
+ * @param cluster 화면에 표시할 클러스터
+ * @param viewModel 갤러리 화면의 뷰모델
+ * @param onSaveCompleted 저장 완료 이후 동작을 전달하는 콜백
  * @param onBack 뒤로가기 동작을 전달하는 콜백
- * @param viewModel 갤러리 화면 ViewModel
  */
 @Composable
 fun GalleryRoute(
-    title: String,
-    mediaList: List<MediaUiModel>,
+    cluster: ClusterUiModel,
+    viewModel: GalleryViewModel = hiltViewModel(),
+    onSaveCompleted: (String, Int) -> Unit,
     onBack: () -> Unit,
-    viewModel: GalleryViewModel = viewModel(factory = GalleryViewModel.provideFactory(title, mediaList)),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+
+    val writeRequestLauncher = rememberWriteRequestLauncher(
+        onGranted = { viewModel.saveSelectedMedia() },
+    )
+
+    LaunchedEffect(viewModel) {
+        viewModel.initialize(cluster)
+
+        viewModel.saveCompletedEvents.collect { event ->
+            onSaveCompleted(event.title, event.savedCount)
+        }
+    }
+
     GalleryScreen(
         uiState = uiState,
         onToggleMedia = viewModel::toggleSelection,
         onSelectAll = viewModel::selectAll,
         onClearSelection = viewModel::clearSelection,
+        onSave = {
+            val selectedMediaList = viewModel.getSelectedMediaList()
+
+            if (selectedMediaList.isEmpty()) return@GalleryScreen
+
+            val uris = selectedMediaList.map { it.uriString.toUri() }
+            val intentSender = MediaStore.createWriteRequest(
+                context.contentResolver,
+                uris,
+            ).intentSender
+
+            writeRequestLauncher(intentSender)
+        },
         onBack = onBack,
     )
 }
@@ -85,6 +119,7 @@ fun GalleryRoute(
  * @param onToggleMedia 미디어 선택 상태 토글 콜백
  * @param onSelectAll 전체 선택 콜백
  * @param onClearSelection 전체 선택 해제 콜백
+ * @param onSave 저장 요청 콜백
  * @param onBack 뒤로가기 동작을 전달하는 콜백
  */
 @Composable
@@ -93,18 +128,23 @@ private fun GalleryScreen(
     onToggleMedia: (MediaUiModel) -> Unit,
     onSelectAll: () -> Unit,
     onClearSelection: () -> Unit,
+    onSave: () -> Unit,
     onBack: () -> Unit,
 ) {
     var isExitDialogVisible by remember { mutableStateOf(false) }
-    val (title, mediaList, selectedMediaIds) = when (uiState) {
-        is GalleryUiState.NoneSelected -> Triple(uiState.title, uiState.mediaList, emptySet())
-        is GalleryUiState.SomeSelected -> Triple(uiState.title, uiState.mediaList, uiState.selectedIds)
+    val cluster = uiState.cluster
+    val title = cluster.title
+    val mediaList = cluster.mediaList
+    val selectedMediaIds = when (uiState) {
+        is GalleryUiState.SomeSelected -> uiState.selectedIds
+        is GalleryUiState.Saving -> uiState.selectedIds
+        else -> emptySet()
     }
     val totalCount = mediaList.size
     val selectedCount = selectedMediaIds.size
     val isAllSelected = totalCount > 0 && selectedCount == totalCount
 
-    BackHandler(enabled = selectedCount > 0 && !isExitDialogVisible) {
+    BackHandler(enabled = uiState is GalleryUiState.SomeSelected && !isExitDialogVisible) {
         isExitDialogVisible = true
     }
 
@@ -116,7 +156,7 @@ private fun GalleryScreen(
     ) {
         GalleryTopBar(
             onBack = {
-                if (selectedCount > 0) {
+                if (uiState is GalleryUiState.SomeSelected) {
                     isExitDialogVisible = true
                 } else {
                     onBack()
@@ -182,21 +222,20 @@ private fun GalleryScreen(
         }
         Spacer(modifier = Modifier.height(12.dp))
         Button(
-            onClick = {},
+            onClick = onSave,
+            enabled = uiState is GalleryUiState.SomeSelected,
             modifier = Modifier
                 .fillMaxWidth()
                 .height(52.dp),
-            enabled = selectedCount > 0,
             shape = RoundedCornerShape(12.dp),
             colors = ButtonDefaults.buttonColors(
                 disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant,
                 disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
             ),
         ) {
-            val buttonText = if (selectedCount > 0) {
-                stringResource(R.string.gallery_save_album_count, selectedCount)
-            } else {
-                stringResource(R.string.gallery_select_prompt)
+            val buttonText = when {
+                uiState is GalleryUiState.SomeSelected -> stringResource(R.string.gallery_save_album_count, selectedCount)
+                else -> stringResource(R.string.gallery_select_prompt)
             }
             Text(text = buttonText)
         }
@@ -387,19 +426,24 @@ private fun GalleryScreenPreview() {
     ChacTheme {
         GalleryScreen(
             uiState = GalleryUiState.NoneSelected(
-                title = "Jeju Trip",
-                mediaList = List(40) { index ->
-                    MediaUiModel(
-                        id = index.toLong(),
-                        uriString = "content://sample/$index",
-                        dateTaken = 0L,
-                        mediaType = MediaType.IMAGE,
-                    )
-                },
+                cluster = ClusterUiModel(
+                    id = 1L,
+                    title = "Jeju Trip",
+                    mediaList = List(40) { index ->
+                        MediaUiModel(
+                            id = index.toLong(),
+                            uriString = "content://sample/$index",
+                            dateTaken = 0L,
+                            mediaType = MediaType.IMAGE,
+                        )
+                    },
+                    saveStatus = SaveUiStatus.Default,
+                ),
             ),
             onToggleMedia = {},
             onSelectAll = {},
             onClearSelection = {},
+            onSave = {},
             onBack = {},
         )
     }

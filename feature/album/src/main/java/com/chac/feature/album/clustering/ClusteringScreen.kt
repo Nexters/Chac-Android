@@ -1,5 +1,6 @@
 package com.chac.feature.album.clustering
 
+import android.provider.MediaStore
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,6 +16,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -24,6 +28,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
+import androidx.core.net.toUri
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -32,8 +37,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.chac.core.designsystem.ui.theme.ChacTheme
 import com.chac.core.permission.MediaWithLocationPermissionUtil
 import com.chac.core.permission.MediaWithLocationPermissionUtil.launchMediaWithLocationPermission
-import com.chac.core.permission.compose.rememberRegisterMediaWithLocationPermission
 import com.chac.core.permission.compose.moveToPermissionSetting
+import com.chac.core.permission.compose.rememberRegisterMediaWithLocationPermission
+import com.chac.core.permission.compose.rememberWriteRequestLauncher
 import com.chac.core.resources.R
 import com.chac.domain.album.media.MediaType
 import com.chac.feature.album.clustering.component.AlbumSectionHeader
@@ -43,27 +49,35 @@ import com.chac.feature.album.clustering.component.LoadingFooter
 import com.chac.feature.album.clustering.component.PlaceholderIcon
 import com.chac.feature.album.clustering.component.TotalPhotoSummary
 import com.chac.feature.album.clustering.model.ClusteringUiState
+import com.chac.feature.album.clustering.model.SaveUiStatus
 import com.chac.feature.album.model.ClusterUiModel
 import com.chac.feature.album.model.MediaUiModel
 
 /**
  * 클러스터링 화면 라우트
  *
- * @param onOpenGallery 갤러리로 이동하는 콜백
  * @param viewModel 클러스터링 화면 ViewModel
+ * @param onClickSavePartial '사진 정리하기' 버튼 클릭 이벤트
  */
 @Composable
 fun ClusteringRoute(
-    onOpenGallery: (String, List<MediaUiModel>) -> Unit,
     viewModel: ClusteringViewModel = hiltViewModel(),
+    onClickSavePartial: (ClusterUiModel) -> Unit,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
+    var pendingWriteCluster by remember { mutableStateOf<ClusterUiModel?>(null) }
     val permission = rememberRegisterMediaWithLocationPermission(
         onGranted = { viewModel.onPermissionChanged(true) },
         onDenied = { viewModel.onPermissionChanged(false) },
         onPermanentlyDenied = { viewModel.onPermissionChanged(false) },
+    )
+    val writeRequestLauncher = rememberWriteRequestLauncher(
+        onGranted = {
+            pendingWriteCluster?.let(viewModel::onClickSaveAll)
+        },
+        onDenied = { },
     )
 
     LaunchedEffect(Unit) {
@@ -86,7 +100,19 @@ fun ClusteringRoute(
 
     ClusteringScreen(
         uiState = uiState,
-        onOpenGallery = onOpenGallery,
+        onClickSavePartial = onClickSavePartial,
+        onClickSaveAll = { cluster ->
+            if (cluster.mediaList.isEmpty()) return@ClusteringScreen
+
+            val uris = cluster.mediaList.map { it.uriString.toUri() }
+            val intentSender = MediaStore.createWriteRequest(
+                context.contentResolver,
+                uris,
+            ).intentSender
+
+            pendingWriteCluster = cluster
+            writeRequestLauncher(intentSender)
+        },
     )
 }
 
@@ -94,12 +120,14 @@ fun ClusteringRoute(
  * 클러스터링 목록 화면
  *
  * @param uiState 클러스터링 화면 상태
- * @param onOpenGallery 갤러리로 이동하는 콜백
+ * @param onClickSavePartial '사진 정리하기' 버튼 클릭 이벤트
+ * @param onClickSaveAll '그대로 저장' 버튼 클릭 이벤트
  */
 @Composable
 private fun ClusteringScreen(
     uiState: ClusteringUiState,
-    onOpenGallery: (String, List<MediaUiModel>) -> Unit,
+    onClickSavePartial: (ClusterUiModel) -> Unit,
+    onClickSaveAll: (ClusterUiModel) -> Unit,
 ) {
     val context = LocalContext.current
 
@@ -139,7 +167,8 @@ private fun ClusteringScreen(
                         ClusterList(
                             clusters = clusters,
                             isLoading = true,
-                            onOpenGallery = onOpenGallery,
+                            onClickSavePartial = onClickSavePartial,
+                            onClickSaveAll = onClickSaveAll,
                         )
                     }
                 }
@@ -151,7 +180,8 @@ private fun ClusteringScreen(
                         ClusterList(
                             clusters = clusters,
                             isLoading = false,
-                            onOpenGallery = onOpenGallery,
+                            onClickSavePartial = onClickSavePartial,
+                            onClickSaveAll = onClickSaveAll,
                         )
                     }
                 }
@@ -235,7 +265,8 @@ private fun ClusteringScreenPreview(
     ChacTheme {
         ClusteringScreen(
             uiState = uiState,
-            onOpenGallery = { _, _ -> },
+            onClickSavePartial = {},
+            onClickSaveAll = {},
         )
     }
 }
@@ -256,11 +287,13 @@ private class ClusteringUiStatePreviewProvider : PreviewParameterProvider<Cluste
             id = 1L,
             title = "Jeju Trip",
             mediaList = sampleMedia,
+            saveStatus = SaveUiStatus.Default,
         ),
         ClusterUiModel(
             id = 2L,
             title = "서초동",
             mediaList = sampleMedia,
+            saveStatus = SaveUiStatus.SaveCompleted,
         ),
     )
 
