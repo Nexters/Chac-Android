@@ -36,6 +36,10 @@ ktlint = "14.0.1"
 # ETC
 apacheCommonsMath3 = "3.6.1"
 timber = "5.0.1"
+coil = "2.7.0"
+
+# Unit Test
+junit = "4.13.2"
 
 [libraries]
 # Gradle Plugins
@@ -93,9 +97,13 @@ room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "
 room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "room" }
 room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
 
+# Unit Test
+junit = { group = "junit", name = "junit", version.ref = "junit" }
+
 # ETC
 commons-math3 = { group = "org.apache.commons", name = "commons-math3", version.ref = "apacheCommonsMath3" }
 timber = { group = "com.jakewharton.timber", name = "timber", version.ref = "timber" }
+coil-compose = { group = "io.coil-kt", name = "coil-compose", version.ref = "coil" }
 
 [plugins]
 # Gradle Plugins

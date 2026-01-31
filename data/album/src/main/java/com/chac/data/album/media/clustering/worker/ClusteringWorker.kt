@@ -9,8 +9,7 @@ import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.ForegroundInfo
 import androidx.work.WorkerParameters
-import com.chac.core.resources.R.*
-import com.chac.domain.album.media.MediaRepository
+import com.chac.core.resources.R.string
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import kotlinx.coroutines.Dispatchers
@@ -23,7 +22,6 @@ import timber.log.Timber
 class ClusteringWorker @AssistedInject constructor(
     @Assisted private val context: Context,
     @Assisted private val workerParams: WorkerParameters,
-    private val mediaRepository: MediaRepository,
 ) : CoroutineWorker(context, workerParams) {
     private val notificationManager by lazy {
         context.getSystemService(NotificationManager::class.java)
@@ -88,8 +86,7 @@ class ClusteringWorker @AssistedInject constructor(
         notificationManager.notify(getNotificationId(), createProgressNotificationBuilder().build())
         runCatching {
             // TODO 여기에 클러스터링 업뎃해주는 코드가 들어가야함
-            mediaRepository.getMedia()
-            delay(3000)
+            delay(5000)
         }.onFailure {
             handleError(it)
         }

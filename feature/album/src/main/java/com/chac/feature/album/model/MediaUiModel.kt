@@ -2,6 +2,7 @@ package com.chac.feature.album.model
 
 import androidx.compose.runtime.Immutable
 import com.chac.domain.album.media.MediaType
+import kotlinx.serialization.Serializable
 
 /**
  * 미디어 UI 표현 모델.
@@ -12,6 +13,7 @@ import com.chac.domain.album.media.MediaType
  * @property mediaType 미디어 타입
  */
 @Immutable
+@Serializable
 data class MediaUiModel(
     val id: Long,
     val uriString: String,

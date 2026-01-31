@@ -1,11 +1,14 @@
 package com.chac.core.permission.compose
 
+import android.app.Activity
 import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
+import android.content.IntentSender
 import android.provider.Settings
 import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.material3.AlertDialog
@@ -40,6 +43,27 @@ fun rememberRegisterMediaWithLocationPermission(
         onPermanentlyDenied = onPermanentlyDenied,
     ),
 )
+
+@Composable
+fun rememberWriteRequestLauncher(
+    onGranted: () -> Unit,
+    onDenied: (() -> Unit)? = null,
+): (IntentSender) -> Unit {
+    val launcher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartIntentSenderForResult(),
+        onResult = { result ->
+            if (result.resultCode == Activity.RESULT_OK) {
+                onGranted()
+            } else {
+                onDenied?.invoke()
+            }
+        },
+    )
+
+    return { intentSender ->
+        launcher.launch(IntentSenderRequest.Builder(intentSender).build())
+    }
+}
 
 @Composable
 fun PermissionDeniedDialog(
