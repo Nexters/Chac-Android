@@ -496,10 +496,9 @@ private fun GalleryScreenPreview() {
                 )
             ),
             onToggleMedia = {},
-            onSelectAll = {},
-            onClearSelection = {},
-            onSave = {},
-            onBack = {},
+            onClickSelectAll = {},
+            onClickSave = {},
+            onClickBack = {},
         )
     }
 }
