@@ -449,7 +449,7 @@ private fun GalleryPhotoItem(
                     Modifier.border(
                         width = 1.dp,
                         color = ChacColors.Primary,
-                        shape = RoundedCornerShape(16.dp),
+            .clip(RoundedCornerShape(12.dp))
                     )
                 } else {
                     Modifier
