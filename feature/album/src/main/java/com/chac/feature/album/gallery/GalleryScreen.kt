@@ -290,7 +290,6 @@ private fun GalleryScreen(
             Text(
                 text = buttonText,
                 style = ChacTextStyles.Btn,
-                color = ChacColors.TextBtn01,
             )
         }
     }
