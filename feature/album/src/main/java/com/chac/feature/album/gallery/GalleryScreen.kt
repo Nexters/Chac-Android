@@ -443,7 +443,7 @@ private fun GalleryPhotoItem(
     Box(
         modifier = modifier
             .aspectRatio(1f)
-            .clip(RoundedCornerShape(16.dp))
+            .clip(RoundedCornerShape(12.dp))
             .then(
                 if (isSelected) {
                     Modifier.border(
