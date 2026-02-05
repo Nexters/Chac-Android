@@ -10,6 +10,7 @@ import com.chac.feature.album.clustering.model.ClusteringUiState
 import com.chac.feature.album.mapper.toDomain
 import com.chac.feature.album.mapper.toUiModel
 import com.chac.feature.album.model.MediaClusterUiModel
+import com.chac.feature.album.model.SaveUiStatus
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
@@ -135,9 +136,13 @@ class ClusteringViewModel @Inject constructor(
 
     /** 클러스터 전체를 앨범으로 저장한다. */
     fun onClickSaveAll(cluster: MediaClusterUiModel) {
+        updateClusterSaveStatus(clusterId = cluster.id, saveStatus = SaveUiStatus.Saving)
         viewModelScope.launch {
             runCatching { saveAlbumUseCase(cluster.toDomain()) }
-                .onSuccess { saveCompletedEventsChannel.trySend(Unit) }
+                .onSuccess {
+                    updateClusterSaveStatus(clusterId = cluster.id, saveStatus = SaveUiStatus.SaveCompleted)
+                    saveCompletedEventsChannel.trySend(Unit)
+                }
                 .onFailure { t -> Timber.e(t, "Failed to save cluster album") }
         }
     }
@@ -152,26 +157,57 @@ class ClusteringViewModel @Inject constructor(
     }
 
     /**
-     * 저장 이후 mediaList가 비어도 썸네일이 유지되도록 이전 썸네일을 병합한다.
+     * 클러스터 갱신 시 썸네일과 저장 상태를 보존하도록 이전 상태를 병합한다.
      *
      * @param newClusters 최신 클러스터 목록
-     * @return 썸네일이 보존된 클러스터 목록
+     * @return 썸네일과 저장 상태가 보존된 클러스터 목록
      */
     private fun mergeThumbnails(
         newClusters: List<MediaClusterUiModel>,
     ): List<MediaClusterUiModel> {
-        val previousThumbnails = currentClusters().associateBy(
-            keySelector = { it.id },
-            valueTransform = { it.thumbnailUriStrings },
-        )
+        val previousClusters = currentClusters().associateBy { it.id }
 
         return newClusters.map { cluster ->
-            if (cluster.thumbnailUriStrings.isNotEmpty()) {
-                cluster
-            } else {
-                val fallback = previousThumbnails[cluster.id]
-                if (fallback != null) cluster.copy(thumbnailUriStrings = fallback) else cluster
+            val previous = previousClusters[cluster.id]
+            val mergedThumbnails = cluster.thumbnailUriStrings.ifEmpty {
+                previous?.thumbnailUriStrings.orEmpty()
             }
+            val mergedSaveStatus = if (cluster.saveStatus != SaveUiStatus.Default) {
+                cluster.saveStatus
+            } else {
+                previous?.saveStatus ?: cluster.saveStatus
+            }
+
+            cluster.copy(
+                thumbnailUriStrings = mergedThumbnails,
+                saveStatus = mergedSaveStatus,
+            )
+        }
+    }
+
+    /**
+     * 특정 클러스터의 저장 상태를 갱신하고 현재 UI 상태에 반영한다.
+     *
+     * @param clusterId 저장 상태를 변경할 클러스터 ID
+     * @param saveStatus 변경할 저장 상태
+     */
+    private fun updateClusterSaveStatus(
+        clusterId: Long,
+        saveStatus: SaveUiStatus,
+    ) {
+        val updatedClusters = currentClusters().map { cluster ->
+            if (cluster.id == clusterId) {
+                cluster.copy(saveStatus = saveStatus)
+            } else {
+                cluster
+            }
+        }
+
+        when (_uiState.value) {
+            is ClusteringUiState.Loading -> _uiState.value = ClusteringUiState.Loading(updatedClusters)
+            is ClusteringUiState.Completed -> _uiState.value = ClusteringUiState.Completed(updatedClusters)
+            ClusteringUiState.PermissionChecking -> Unit
+            ClusteringUiState.PermissionDenied -> Unit
         }
     }
 }
