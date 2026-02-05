@@ -12,9 +12,11 @@ import com.chac.feature.album.mapper.toUiModel
 import com.chac.feature.album.model.MediaClusterUiModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.retryWhen
 import kotlinx.coroutines.launch
 import timber.log.Timber
@@ -32,6 +34,10 @@ class ClusteringViewModel @Inject constructor(
     /** 클러스터링 화면의 상태 */
     private val _uiState = MutableStateFlow<ClusteringUiState>(ClusteringUiState.PermissionChecking)
     val uiState: StateFlow<ClusteringUiState> = _uiState.asStateFlow()
+
+    /** 앨범 전체 저장 완료 이벤트 채널 */
+    private val saveCompletedEventsChannel = Channel<Unit>(capacity = Channel.BUFFERED)
+    val saveCompletedEvents = saveCompletedEventsChannel.receiveAsFlow()
 
     /**
      * 클러스터 스트림 수집의 예외 처리를 위한 Job
@@ -131,6 +137,7 @@ class ClusteringViewModel @Inject constructor(
     fun onClickSaveAll(cluster: MediaClusterUiModel) {
         viewModelScope.launch {
             runCatching { saveAlbumUseCase(cluster.toDomain()) }
+                .onSuccess { saveCompletedEventsChannel.trySend(Unit) }
                 .onFailure { t -> Timber.e(t, "Failed to save cluster album") }
         }
     }

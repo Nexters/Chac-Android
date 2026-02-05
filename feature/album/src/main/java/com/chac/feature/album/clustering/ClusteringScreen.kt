@@ -115,6 +115,12 @@ fun ClusteringRoute(
         requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
     }
 
+    LaunchedEffect(viewModel) {
+        viewModel.saveCompletedEvents.collect {
+            toastState.showToast()
+        }
+    }
+
     DisposableEffect(lifecycleOwner, context) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
