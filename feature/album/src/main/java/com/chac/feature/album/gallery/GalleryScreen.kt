@@ -218,7 +218,7 @@ private fun GalleryScreen(
                         .background(color = ChacColors.BackgroundPopup)
                         .border(width = 1.dp, color = ChacColors.Stroke01, shape = RoundedCornerShape(16.dp))
                         .clickable {
-                            onClickSelectAll(isAllSelected)
+                            onClickSelectAll(false)
                         }
                         .padding(horizontal = 12.dp, vertical = 7.dp),
                     contentAlignment = Alignment.Center,
@@ -235,7 +235,7 @@ private fun GalleryScreen(
                         .clip(RoundedCornerShape(16.dp))
                         .background(color = ChacColors.BackgroundPopup)
                         .clickable {
-                            onClickSelectAll(isAllSelected)
+                            onClickSelectAll(true)
                         }
                         .padding(horizontal = 12.dp, vertical = 7.dp),
                     contentAlignment = Alignment.Center,
@@ -290,7 +290,6 @@ private fun GalleryScreen(
             Text(
                 text = buttonText,
                 style = ChacTextStyles.Btn,
-                color = ChacColors.TextBtn01,
             )
         }
     }
@@ -360,7 +359,7 @@ private fun GalleryExitDialog(
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = ChacColors.Sub04,
-                            contentColor = ChacColors.Primary,
+                            contentColor = ChacColors.TextBtn02,
                         ),
                     ) {
                         Text(
@@ -444,13 +443,13 @@ private fun GalleryPhotoItem(
     Box(
         modifier = modifier
             .aspectRatio(1f)
-            .clip(RoundedCornerShape(16.dp))
+            .clip(RoundedCornerShape(12.dp))
             .then(
                 if (isSelected) {
                     Modifier.border(
                         width = 1.dp,
                         color = ChacColors.Primary,
-                        shape = RoundedCornerShape(16.dp),
+            .clip(RoundedCornerShape(12.dp))
                     )
                 } else {
                     Modifier
