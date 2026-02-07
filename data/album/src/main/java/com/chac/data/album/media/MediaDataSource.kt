@@ -35,6 +35,7 @@ internal class MediaDataSource @Inject constructor(
             MediaStore.Files.FileColumns._ID,
             MediaStore.Files.FileColumns.DATE_TAKEN,
             MediaStore.Files.FileColumns.MEDIA_TYPE,
+            MediaStore.Files.FileColumns.DATA,
         )
 
         // 미디어 타입 필터 설정
@@ -52,8 +53,14 @@ internal class MediaDataSource @Inject constructor(
             "${MediaStore.Files.FileColumns.DATE_TAKEN} >= ? AND " +
             "${MediaStore.Files.FileColumns.DATE_TAKEN} <= ?"
 
+        // 폴더 필터 설정 - DCIM, 다운로드, 카카오톡 폴더만 허용
+        // Pictures 폴더는 이미 정리된 앨범들이 저장되므로 제외 (KakaoTalk 제외)
+        val folderSelection = "(${MediaStore.Files.FileColumns.DATA} LIKE '%/DCIM/%' OR " +
+            "${MediaStore.Files.FileColumns.DATA} LIKE '%/Download/%' OR " +
+            "${MediaStore.Files.FileColumns.DATA} LIKE '%/KakaoTalk/%')"
+
         // 최종 쿼리 조건 구성
-        val selection = "$typeSelection AND $timeSelection"
+        val selection = "$typeSelection AND $timeSelection AND $folderSelection"
         val selectionArgs = arrayOf(startTime.toString(), endTime.toString())
 
         // 정렬 설정
