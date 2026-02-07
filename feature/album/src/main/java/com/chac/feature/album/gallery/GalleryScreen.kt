@@ -5,7 +5,9 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -21,7 +23,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -77,6 +79,7 @@ fun GalleryRoute(
     cluster: MediaClusterUiModel,
     viewModel: GalleryViewModel = hiltViewModel(),
     onSaveCompleted: (String, Int) -> Unit,
+    onClickMediaPreview: (MediaClusterUiModel, Long) -> Unit,
     onClickBack: () -> Unit,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -117,6 +120,7 @@ fun GalleryRoute(
 
             writeRequestLauncher(intentSender)
         },
+        onClickMediaPreview = onClickMediaPreview,
         onClickBack = onClickBack,
     )
 }
@@ -128,6 +132,7 @@ fun GalleryRoute(
  * @param onToggleMedia 미디어 선택 상태 토글 콜백
  * @param onClickSelectAll 전체 선택 버튼 클릭 이벤트 콜백
  * @param onClickSave 저장 버튼 클릭 이벤트 콜백
+ * @param onClickMediaPreview 미디어 미리보기 화면 이동 콜백
  * @param onClickBack 뒤로가기 버튼 클릭 이벤트 콜백
  */
 @Composable
@@ -136,6 +141,7 @@ private fun GalleryScreen(
     onToggleMedia: (MediaUiModel) -> Unit,
     onClickSelectAll: (Boolean) -> Unit,
     onClickSave: () -> Unit,
+    onClickMediaPreview: (MediaClusterUiModel, Long) -> Unit,
     onClickBack: () -> Unit,
 ) {
     var isExitDialogVisible by remember { mutableStateOf(false) }
@@ -254,11 +260,14 @@ private fun GalleryScreen(
                 verticalArrangement = Arrangement.spacedBy(10.dp),
                 contentPadding = PaddingValues(horizontal = 20.dp),
             ) {
-                items(mediaList, key = { it.id }) { media ->
+                itemsIndexed(mediaList, key = { _, media -> media.id }) { index, media ->
                     GalleryPhotoItem(
                         media = media,
                         isSelected = selectedMediaIds.contains(media.id),
                         onToggle = { onToggleMedia(media) },
+                        onLongClick = {
+                            onClickMediaPreview(cluster, media.id)
+                        },
                     )
                 }
             }
@@ -440,12 +449,15 @@ private fun GalleryTopBar(
  * @param media 이미지 모델
  * @param isSelected 선택 상태 여부
  * @param onToggle 선택 상태 토글 콜백
+ * @param onLongClick 롱클릭 이벤트 콜백
  */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun GalleryPhotoItem(
     media: MediaUiModel,
     isSelected: Boolean,
     onToggle: () -> Unit,
+    onLongClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Box(
@@ -465,7 +477,10 @@ private fun GalleryPhotoItem(
                 },
             )
             .background(ChacColors.BackgroundPopup)
-            .clickable(onClick = onToggle),
+            .combinedClickable(
+                onClick = onToggle,
+                onLongClick = onLongClick,
+            ),
     ) {
         ChacImage(
             model = media.uriString,
@@ -510,6 +525,7 @@ private fun GalleryScreenPreview() {
             onToggleMedia = {},
             onClickSelectAll = {},
             onClickSave = {},
+            onClickMediaPreview = { _, _ -> },
             onClickBack = {},
         )
     }
@@ -543,6 +559,7 @@ private fun GalleryScreenAllSelectedPreview() {
             onToggleMedia = {},
             onClickSelectAll = {},
             onClickSave = {},
+            onClickMediaPreview = { _, _ -> },
             onClickBack = {},
         )
     }
