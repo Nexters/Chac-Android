@@ -169,16 +169,29 @@ class GalleryViewModel @Inject constructor(
                 .collect { clusters ->
                     val updatedCluster = clusters.firstOrNull { it.id == clusterId }?.toUiModel()
 
-                    _uiState.update {
+                    _uiState.update { current ->
                         val newCluster = when {
-                            updatedCluster == null -> it.cluster.copy(mediaList = emptyList())
-                            updatedCluster.thumbnailUriStrings.isEmpty() && it.cluster.thumbnailUriStrings.isNotEmpty() ->
+                            updatedCluster == null -> current.cluster.copy(mediaList = emptyList())
+                            updatedCluster.thumbnailUriStrings.isEmpty() && current.cluster.thumbnailUriStrings.isNotEmpty() ->
                                 updatedCluster.copy(
-                                    thumbnailUriStrings = it.cluster.thumbnailUriStrings,
+                                    thumbnailUriStrings = current.cluster.thumbnailUriStrings,
                                 )
                             else -> updatedCluster
                         }
-                        GalleryUiState.NoneSelected(newCluster)
+                        // 현재 상태 타입과 선택 상태를 유지하면서 클러스터만 갱신한다.
+                        when (current) {
+                            is GalleryUiState.NoneSelected -> GalleryUiState.NoneSelected(newCluster)
+                            is GalleryUiState.SomeSelected -> {
+                                val validIds = newCluster.mediaList.map { it.id }.toSet()
+                                val kept = current.selectedIds.intersect(validIds)
+                                if (kept.isEmpty()) {
+                                    GalleryUiState.NoneSelected(newCluster)
+                                } else {
+                                    GalleryUiState.SomeSelected(newCluster, kept)
+                                }
+                            }
+                            is GalleryUiState.Saving -> GalleryUiState.Saving(newCluster, current.selectedIds)
+                        }
                     }
                 }
         }
