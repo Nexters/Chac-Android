@@ -1,7 +1,6 @@
 package com.chac.feature.album.clustering
 
 import android.Manifest
-import android.provider.MediaStore
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
@@ -16,8 +15,6 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Text
@@ -25,9 +22,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -38,16 +32,11 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
-import androidx.core.net.toUri
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.chac.core.designsystem.ui.component.ChacToast
-import com.chac.core.designsystem.ui.component.ChacToastIcon
-import com.chac.core.designsystem.ui.component.ChacToastState
-import com.chac.core.designsystem.ui.component.rememberChacToastState
 import com.chac.core.designsystem.ui.theme.ChacColors
 import com.chac.core.designsystem.ui.theme.ChacTextStyles
 import com.chac.core.designsystem.ui.theme.ChacTheme
@@ -55,7 +44,6 @@ import com.chac.core.permission.MediaWithLocationPermissionUtil
 import com.chac.core.permission.MediaWithLocationPermissionUtil.launchMediaWithLocationPermission
 import com.chac.core.permission.compose.moveToPermissionSetting
 import com.chac.core.permission.compose.rememberRegisterMediaWithLocationPermission
-import com.chac.core.permission.compose.rememberWriteRequestLauncher
 import com.chac.core.resources.R
 import com.chac.domain.album.media.model.MediaType
 import com.chac.feature.album.clustering.component.AlbumSectionHeader
@@ -71,30 +59,21 @@ import com.chac.feature.album.model.SaveUiStatus
  * 클러스터링 화면 라우트
  *
  * @param viewModel 클러스터링 화면 ViewModel
- * @param onClickSavePartial '사진 정리하기' 버튼 클릭 이벤트 콜백
+ * @param onClickCluster 클러스터 카드 클릭 이벤트 콜백
  */
 @Composable
 fun ClusteringRoute(
     viewModel: ClusteringViewModel = hiltViewModel(),
-    onClickSavePartial: (MediaClusterUiModel) -> Unit,
+    onClickCluster: (MediaClusterUiModel) -> Unit,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
-    var pendingWriteCluster by remember { mutableStateOf<MediaClusterUiModel?>(null) }
-    val toastState = rememberChacToastState()
-    val savedToastMessage = stringResource(R.string.clustering_keep_saved_toast)
 
     val permission = rememberRegisterMediaWithLocationPermission(
         onGranted = { viewModel.onPermissionChanged(true) },
         onDenied = { viewModel.onPermissionChanged(false) },
         onPermanentlyDenied = { viewModel.onPermissionChanged(false) },
-    )
-    val writeRequestLauncher = rememberWriteRequestLauncher(
-        onGranted = {
-            pendingWriteCluster?.let(viewModel::onClickSaveAll)
-        },
-        onDenied = { },
     )
 
     // 알림 권한 요청 런처
@@ -112,13 +91,7 @@ fun ClusteringRoute(
             permission.launchMediaWithLocationPermission()
         }
 
-        requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-    }
-
-    LaunchedEffect(viewModel) {
-        viewModel.saveCompletedEvents.collect {
-            toastState.showToast()
-        }
+//        requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
     }
 
     DisposableEffect(lifecycleOwner, context) {
@@ -133,21 +106,7 @@ fun ClusteringRoute(
 
     ClusteringScreen(
         uiState = uiState,
-        toastState = toastState,
-        toastMessage = savedToastMessage,
-        onClickSavePartial = onClickSavePartial,
-        onClickSaveAll = { cluster ->
-            if (cluster.mediaList.isEmpty()) return@ClusteringScreen
-
-            val uris = cluster.mediaList.map { it.uriString.toUri() }
-            val intentSender = MediaStore.createWriteRequest(
-                context.contentResolver,
-                uris,
-            ).intentSender
-
-            pendingWriteCluster = cluster
-            writeRequestLauncher(intentSender)
-        },
+        onClickCluster = onClickCluster,
     )
 }
 
@@ -155,18 +114,12 @@ fun ClusteringRoute(
  * 클러스터링 목록 화면.
  *
  * @param uiState 클러스터링 화면 상태
- * @param toastState 토스트 노출 상태
- * @param toastMessage 토스트 메시지
- * @param onClickSavePartial '사진 정리하기' 버튼 클릭 이벤트 콜백
- * @param onClickSaveAll '그대로 저장' 버튼 클릭 이벤트 콜백
+ * @param onClickCluster 클러스터 카드 클릭 이벤트 콜백
  */
 @Composable
 private fun ClusteringScreen(
     uiState: ClusteringUiState,
-    toastState: ChacToastState,
-    toastMessage: String,
-    onClickSavePartial: (MediaClusterUiModel) -> Unit,
-    onClickSaveAll: (MediaClusterUiModel) -> Unit,
+    onClickCluster: (MediaClusterUiModel) -> Unit,
 ) {
     val context = LocalContext.current
     val clusters = (uiState as? ClusteringUiState.WithClusters)?.clusters.orEmpty()
@@ -203,8 +156,7 @@ private fun ClusteringScreen(
                         } else {
                             ClusterList(
                                 clusters = clusters,
-                                onClickSavePartial = onClickSavePartial,
-                                onClickSaveAll = onClickSaveAll,
+                                onClickCluster = onClickCluster,
                             )
                         }
                     }
@@ -222,8 +174,7 @@ private fun ClusteringScreen(
                         } else {
                             ClusterList(
                                 clusters = clusters,
-                                onClickSavePartial = onClickSavePartial,
-                                onClickSaveAll = onClickSaveAll,
+                                onClickCluster = onClickCluster,
                             )
                         }
                     }
@@ -231,13 +182,6 @@ private fun ClusteringScreen(
             }
         }
     }
-
-    ChacToast(
-        state = toastState,
-        text = toastMessage,
-        textColor = ChacColors.Text01,
-        icon = ChacToastIcon.Vector(Icons.Outlined.Info, tint = ChacColors.Text01),
-    )
 }
 
 /**
@@ -396,10 +340,7 @@ private fun ClusteringScreenPreview(
     ChacTheme {
         ClusteringScreen(
             uiState = uiState,
-            toastState = rememberChacToastState(),
-            toastMessage = stringResource(R.string.clustering_keep_saved_toast),
-            onClickSavePartial = {},
-            onClickSaveAll = {},
+            onClickCluster = {},
         )
     }
 }
