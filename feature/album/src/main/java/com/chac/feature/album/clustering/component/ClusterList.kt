@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
@@ -33,11 +34,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import com.chac.core.designsystem.ui.component.ChacImage
 import com.chac.core.designsystem.ui.icon.ArrowTopRight
 import com.chac.core.designsystem.ui.icon.ChacIcons
+import com.chac.core.designsystem.ui.modifier.verticalScrollFadingEdge
 import com.chac.core.designsystem.ui.theme.ChacColors
 import com.chac.core.designsystem.ui.theme.ChacTextStyles
 import com.chac.core.designsystem.ui.theme.ChacTheme
@@ -57,6 +60,9 @@ import com.chac.feature.album.model.MediaUiModel
 fun ClusterList(
     clusters: List<MediaClusterUiModel>,
     modifier: Modifier = Modifier,
+    contentPadding: PaddingValues = PaddingValues(top = 12.dp, bottom = 40.dp),
+    fadingEdgeTop: Dp = 12.dp,
+    fadingEdgeBottom: Dp = 12.dp,
     clusterCardBackgroundColor: (MediaClusterUiModel, Int) -> Color = { _, index ->
         val colors = listOf(
             ChacColors.Primary,
@@ -67,10 +73,20 @@ fun ClusterList(
     },
     onClickCluster: (MediaClusterUiModel) -> Unit,
 ) {
+    val listState = rememberLazyListState()
+
     LazyColumn(
-        modifier = modifier.fillMaxSize(),
+        modifier = modifier
+            .fillMaxSize()
+            .verticalScrollFadingEdge(
+                state = listState,
+                top = fadingEdgeTop,
+                bottom = fadingEdgeBottom,
+            ),
+        state = listState,
         verticalArrangement = Arrangement.spacedBy(14.dp),
-        contentPadding = PaddingValues(bottom = 40.dp),
+        // 규칙: 페이딩 엣지(top/bottom) 높이만큼 contentPadding(top/bottom)을 확보해야 자연스럽다.
+        contentPadding = contentPadding,
     ) {
         itemsIndexed(items = clusters, key = { _, item -> item.id }) { index, cluster ->
             ClusterCard(
