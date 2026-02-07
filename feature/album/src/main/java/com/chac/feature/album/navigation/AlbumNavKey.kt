@@ -21,6 +21,20 @@ sealed interface AlbumNavKey : NavKey {
         val cluster: MediaClusterUiModel,
     ) : AlbumNavKey
 
+    // TODO: Gallery와 함께 cluster 대신 clusterId로 조회하는 방식으로 전환
+
+    /**
+     * 미디어 미리보기 화면
+     *
+     * @param cluster 클러스터
+     * @param mediaId 최초 표시할 미디어 식별자
+     */
+    @Serializable
+    data class MediaPreview(
+        val cluster: MediaClusterUiModel,
+        val mediaId: Long,
+    ) : AlbumNavKey
+
     /**
      * 앨범 저장 완료 화면
      *
