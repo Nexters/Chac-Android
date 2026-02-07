@@ -2,10 +2,10 @@ package com.chac.feature.album.gallery
 
 import android.provider.MediaStore
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
@@ -24,6 +24,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -56,6 +57,7 @@ import com.chac.core.designsystem.ui.icon.Back
 import com.chac.core.designsystem.ui.icon.ChacIcons
 import com.chac.core.designsystem.ui.icon.CheckSelected
 import com.chac.core.designsystem.ui.icon.CheckUnselected
+import com.chac.core.designsystem.ui.modifier.verticalScrollFadingEdge
 import com.chac.core.designsystem.ui.theme.ChacColors
 import com.chac.core.designsystem.ui.theme.ChacTextStyles
 import com.chac.core.designsystem.ui.theme.ChacTheme
@@ -145,6 +147,8 @@ private fun GalleryScreen(
     onClickBack: () -> Unit,
 ) {
     var isExitDialogVisible by remember { mutableStateOf(false) }
+    val gridState = rememberLazyGridState()
+
     val cluster = uiState.cluster
     val title = cluster.address.ifBlank {
         cluster.formattedDate.ifBlank { stringResource(R.string.clustering_default_album_title) }
@@ -250,15 +254,21 @@ private fun GalleryScreen(
                     }
                 }
             }
-            Spacer(modifier = Modifier.height(20.dp))
+
             LazyVerticalGrid(
                 columns = GridCells.Fixed(3),
                 modifier = Modifier
                     .weight(1f)
-                    .fillMaxWidth(),
+                    .fillMaxWidth()
+                    .verticalScrollFadingEdge(
+                        state = gridState,
+                        top = 14.dp,
+                        bottom = 14.dp,
+                    ),
+                state = gridState,
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
-                contentPadding = PaddingValues(horizontal = 20.dp),
+                contentPadding = PaddingValues(14.dp),
             ) {
                 itemsIndexed(mediaList, key = { _, media -> media.id }) { index, media ->
                     GalleryPhotoItem(
@@ -271,7 +281,9 @@ private fun GalleryScreen(
                     )
                 }
             }
-            Spacer(modifier = Modifier.height(20.dp))
+
+            Spacer(modifier = Modifier.height(6.dp))
+
             Button(
                 onClick = onClickSave,
                 enabled = uiState is GalleryUiState.SomeSelected,

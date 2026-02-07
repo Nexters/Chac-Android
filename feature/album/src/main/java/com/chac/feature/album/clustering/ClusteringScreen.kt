@@ -207,7 +207,7 @@ private fun CommonSectionOfPermissionGranted(
             clusterCount = clusters.size,
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(6.dp))
     }
 }
 
