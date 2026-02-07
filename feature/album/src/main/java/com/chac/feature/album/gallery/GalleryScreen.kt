@@ -240,7 +240,6 @@ private fun GalleryScreen(
                     )
                 }
             }
-
         }
         Spacer(modifier = Modifier.height(20.dp))
         LazyVerticalGrid(

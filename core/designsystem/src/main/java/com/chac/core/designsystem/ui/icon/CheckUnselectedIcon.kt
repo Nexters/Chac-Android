@@ -57,7 +57,7 @@ private fun CheckUnselectedIconPreview() {
     Box(
         modifier = Modifier
             .background(ChacColors.Background)
-            .padding(16.dp)
+            .padding(16.dp),
     ) {
         Icon(
             imageVector = ChacIcons.CheckUnselected,
