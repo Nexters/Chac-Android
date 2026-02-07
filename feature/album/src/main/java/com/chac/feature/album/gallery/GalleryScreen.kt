@@ -63,7 +63,6 @@ import com.chac.feature.album.gallery.model.GalleryUiState
 import com.chac.feature.album.model.MediaClusterUiModel
 import com.chac.feature.album.model.MediaUiModel
 
-
 /**
  * 갤러리 화면 라우트
  *
@@ -140,7 +139,9 @@ private fun GalleryScreen(
 ) {
     var isExitDialogVisible by remember { mutableStateOf(false) }
     val cluster = uiState.cluster
-    val title = cluster.title
+    val title = cluster.address.ifBlank {
+        cluster.formattedDate.ifBlank { stringResource(R.string.clustering_default_album_title) }
+    }
     val mediaList = cluster.mediaList
     val selectedMediaIds = when (uiState) {
         is GalleryUiState.SomeSelected -> uiState.selectedIds
@@ -475,7 +476,8 @@ private fun GalleryScreenPreview() {
             uiState = GalleryUiState.NoneSelected(
                 cluster = MediaClusterUiModel(
                     id = 1L,
-                    title = "Jeju Trip",
+                    address = "Jeju Trip",
+                    formattedDate = "2024.01.15",
                     mediaList = List(40) { index ->
                         MediaUiModel(
                             id = index.toLong(),
@@ -488,7 +490,6 @@ private fun GalleryScreenPreview() {
                         "content://sample/0",
                         "content://sample/1",
                     ),
-
                 ),
             ),
             onToggleMedia = {},
@@ -507,7 +508,8 @@ private fun GalleryScreenAllSelectedPreview() {
             uiState = GalleryUiState.SomeSelected(
                 cluster = MediaClusterUiModel(
                     id = 1L,
-                    title = "Jeju Trip",
+                    address = "Jeju Trip",
+                    formattedDate = "2024.01.15",
                     mediaList = List(40) { index ->
                         MediaUiModel(
                             id = index.toLong(),
@@ -520,7 +522,6 @@ private fun GalleryScreenAllSelectedPreview() {
                         "content://sample/0",
                         "content://sample/1",
                     ),
-
                 ),
                 selectedIds = (0L until 40L).toSet(),
             ),

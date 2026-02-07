@@ -45,6 +45,11 @@ object ChacColors {
     val Etc = Color(0xFF666666)
     val Splash = Color(0xFF6B28E5)
 
+    // Cluster card backgrounds
+    val ClusterCard01 = Color(0xFF784DFF)
+    val ClusterCard02 = Color(0xFF14BCCC)
+    val ClusterCard03 = Color(0xFFFC66FF)
+
     // Utility colors with alpha
     val Ffffff80 = Color(0xCCFFFFFF)
     val Ffffff40 = Color(0x66FFFFFF)

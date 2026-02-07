@@ -125,7 +125,7 @@ class GalleryViewModel @Inject constructor(
                 }
                 if (result.isSuccess) {
                     saveCompletedEventsChannel.trySend(
-                        SaveCompletedEvent(savingState.cluster.title, result.getOrNull() ?: 0),
+                        SaveCompletedEvent(savingState.cluster.address, result.getOrNull() ?: 0),
                     )
                 } else {
                     GalleryUiState.SomeSelected(savingState.cluster, selectedIds)
@@ -187,7 +187,8 @@ class GalleryViewModel @Inject constructor(
     companion object {
         private val EMPTY_CLUSTER = MediaClusterUiModel(
             id = 0L,
-            title = "",
+            address = "",
+            formattedDate = "",
             mediaList = emptyList(),
             thumbnailUriStrings = emptyList(),
         )

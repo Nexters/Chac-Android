@@ -75,11 +75,17 @@ internal class MediaRepositoryImpl @Inject constructor(
         timeBasedClusters.values.forEach { mediaInTimeCluster ->
             val locationBasedClusters = locationBasedClusteringStrategy.cluster(mediaInTimeCluster)
             locationBasedClusters.forEach { (keyTime, mediaList) ->
-                val title = getClusterTitle(mediaList)
+                val address = getClusterAddress(mediaList)
+                val formattedDate = if (mediaList.isNotEmpty()) {
+                    timeFormatProvider.formatClusterTime(mediaList.first().dateTaken)
+                } else {
+                    ""
+                }
                 val cluster = MediaCluster(
                     id = keyTime,
                     mediaList = mediaList,
-                    title = title,
+                    address = address,
+                    formattedDate = formattedDate,
                 )
                 mediaClusters.add(cluster)
                 onCluster(cluster)
@@ -118,7 +124,8 @@ internal class MediaRepositoryImpl @Inject constructor(
         val targetClusterId = cluster.id
 
         // 앨범을 저장하고 저장된 미디어 리스트를 반환받는다.
-        val savedMedia = dataSource.saveAlbum(cluster.title, mediaList)
+        val albumTitle = "${cluster.formattedDate} ${cluster.address}".trim()
+        val savedMedia = dataSource.saveAlbum(albumTitle, mediaList)
         if (savedMedia.isEmpty()) return emptyList()
 
         val savedIds = savedMedia.map { it.id }.toHashSet()
@@ -134,19 +141,11 @@ internal class MediaRepositoryImpl @Inject constructor(
         return savedMedia
     }
 
-    private suspend fun getClusterTitle(mediaList: List<Media>): String {
+    private suspend fun getClusterAddress(mediaList: List<Media>): String {
         if (mediaList.isEmpty()) return ""
-        val address = getClusterCentroid(mediaList)
+        return getClusterCentroid(mediaList)
             ?.let { centroid -> reverseGeocoder.reverseGeocode(centroid).orEmpty() }
             .orEmpty()
-
-        val formattedTime = timeFormatProvider.formatClusterTime(mediaList.first().dateTaken)
-
-        return if (address.isBlank()) {
-            formattedTime
-        } else {
-            "$formattedTime $address"
-        }
     }
 
     private suspend fun getClusterCentroid(mediaList: List<Media>): MediaLocation? {

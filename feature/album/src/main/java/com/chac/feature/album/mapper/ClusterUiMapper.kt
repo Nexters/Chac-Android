@@ -11,7 +11,8 @@ import com.chac.feature.album.model.MediaClusterUiModel
  */
 internal fun MediaCluster.toUiModel(): MediaClusterUiModel = MediaClusterUiModel(
     id = id,
-    title = title,
+    address = address,
+    formattedDate = formattedDate,
     mediaList = mediaList.map { it.toUiModel() },
     thumbnailUriStrings = listOfNotNull(
         mediaList.getOrNull(0)?.uriString,
@@ -27,6 +28,7 @@ internal fun MediaCluster.toUiModel(): MediaClusterUiModel = MediaClusterUiModel
  */
 internal fun MediaClusterUiModel.toDomain(): MediaCluster = MediaCluster(
     id = id,
-    title = title,
+    address = address,
+    formattedDate = formattedDate,
     mediaList = mediaList.map { it.toDomain() },
 )
