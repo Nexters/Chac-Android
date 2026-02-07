@@ -4,20 +4,16 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.chac.domain.album.media.usecase.GetClusteredMediaStateUseCase
 import com.chac.domain.album.media.usecase.GetClusteredMediaStreamUseCase
-import com.chac.domain.album.media.usecase.SaveAlbumUseCase
 import com.chac.domain.album.media.usecase.StartClusteringUseCase
 import com.chac.feature.album.clustering.model.ClusteringUiState
-import com.chac.feature.album.mapper.toDomain
 import com.chac.feature.album.mapper.toUiModel
 import com.chac.feature.album.model.MediaClusterUiModel
 import com.chac.feature.album.model.SaveUiStatus
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.retryWhen
 import kotlinx.coroutines.launch
 import timber.log.Timber
@@ -30,15 +26,10 @@ class ClusteringViewModel @Inject constructor(
     private val getClusteredMediaStreamUseCase: GetClusteredMediaStreamUseCase,
     private val startClusteringUseCase: StartClusteringUseCase,
     private val getClusteredMediaStateUseCase: GetClusteredMediaStateUseCase,
-    private val saveAlbumUseCase: SaveAlbumUseCase,
 ) : ViewModel() {
     /** 클러스터링 화면의 상태 */
     private val _uiState = MutableStateFlow<ClusteringUiState>(ClusteringUiState.PermissionChecking)
     val uiState: StateFlow<ClusteringUiState> = _uiState.asStateFlow()
-
-    /** 앨범 전체 저장 완료 이벤트 채널 */
-    private val saveCompletedEventsChannel = Channel<Unit>(capacity = Channel.BUFFERED)
-    val saveCompletedEvents = saveCompletedEventsChannel.receiveAsFlow()
 
     /**
      * 클러스터 스트림 수집의 예외 처리를 위한 Job
@@ -134,19 +125,6 @@ class ClusteringViewModel @Inject constructor(
         }
     }
 
-    /** 클러스터 전체를 앨범으로 저장한다. */
-    fun onClickSaveAll(cluster: MediaClusterUiModel) {
-        updateClusterSaveStatus(clusterId = cluster.id, saveStatus = SaveUiStatus.Saving)
-        viewModelScope.launch {
-            runCatching { saveAlbumUseCase(cluster.toDomain()) }
-                .onSuccess {
-                    updateClusterSaveStatus(clusterId = cluster.id, saveStatus = SaveUiStatus.SaveCompleted)
-                    saveCompletedEventsChannel.trySend(Unit)
-                }
-                .onFailure { t -> Timber.e(t, "Failed to save cluster album") }
-        }
-    }
-
     /**
      * 현재 UI 상태에 포함된 클러스터 목록을 가져온다.
      */
@@ -182,32 +160,6 @@ class ClusteringViewModel @Inject constructor(
                 thumbnailUriStrings = mergedThumbnails,
                 saveStatus = mergedSaveStatus,
             )
-        }
-    }
-
-    /**
-     * 특정 클러스터의 저장 상태를 갱신하고 현재 UI 상태에 반영한다.
-     *
-     * @param clusterId 저장 상태를 변경할 클러스터 ID
-     * @param saveStatus 변경할 저장 상태
-     */
-    private fun updateClusterSaveStatus(
-        clusterId: Long,
-        saveStatus: SaveUiStatus,
-    ) {
-        val updatedClusters = currentClusters().map { cluster ->
-            if (cluster.id == clusterId) {
-                cluster.copy(saveStatus = saveStatus)
-            } else {
-                cluster
-            }
-        }
-
-        when (_uiState.value) {
-            is ClusteringUiState.Loading -> _uiState.value = ClusteringUiState.Loading(updatedClusters)
-            is ClusteringUiState.Completed -> _uiState.value = ClusteringUiState.Completed(updatedClusters)
-            ClusteringUiState.PermissionChecking -> Unit
-            ClusteringUiState.PermissionDenied -> Unit
         }
     }
 }

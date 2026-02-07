@@ -40,7 +40,6 @@ import com.chac.core.resources.R
  * @param title 저장된 앨범 제목
  * @param savedCount 저장된 사진 개수
  * @param onClose 닫기 버튼 클릭 이벤트 콜백
- * @param onClickToGallery '갤러리로' 버튼 클릭 이벤트 콜백
  * @param onClickToList '목록으로' 버튼 클릭 이벤트 콜백
  */
 @Composable
@@ -48,14 +47,12 @@ fun SaveCompletedRoute(
     title: String,
     savedCount: Int,
     onClose: () -> Unit,
-    onClickToGallery: () -> Unit,
     onClickToList: () -> Unit,
 ) {
     SaveCompletedScreen(
         title = title,
         savedCount = savedCount,
         onClickClose = onClose,
-        onClickToGallery = onClickToGallery,
         onClickToList = onClickToList,
     )
 }
@@ -66,7 +63,6 @@ fun SaveCompletedRoute(
  * @param title 저장된 앨범 제목
  * @param savedCount 저장된 사진 개수
  * @param onClickClose 닫기 버튼 클릭 이벤트 콜백
- * @param onClickToGallery '갤러리로' 버튼 클릭 이벤트 콜백
  * @param onClickToList '목록으로' 버튼 클릭 이벤트 콜백
  */
 @Composable
@@ -74,7 +70,6 @@ private fun SaveCompletedScreen(
     title: String,
     savedCount: Int,
     onClickClose: () -> Unit,
-    onClickToGallery: () -> Unit,
     onClickToList: () -> Unit,
 ) {
     Column(
@@ -148,43 +143,21 @@ private fun SaveCompletedScreen(
             }
         }
 
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        Button(
+            onClick = onClickToList,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(54.dp),
+            shape = RoundedCornerShape(12.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = ChacColors.Primary,
+                contentColor = ChacColors.TextBtn01,
+            ),
         ) {
-            Button(
-                onClick = onClickToGallery,
-                modifier = Modifier
-                    .weight(1f)
-                    .height(54.dp),
-                shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = ChacColors.Sub04,
-                    contentColor = ChacColors.TextBtn02,
-                ),
-            ) {
-                Text(
-                    text = stringResource(R.string.save_completed_sub_button_title),
-                    style = ChacTextStyles.Btn,
-                )
-            }
-
-            Button(
-                onClick = onClickToList,
-                modifier = Modifier
-                    .weight(1f)
-                    .height(54.dp),
-                shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = ChacColors.Primary,
-                    contentColor = ChacColors.TextBtn01,
-                ),
-            ) {
-                Text(
-                    text = stringResource(R.string.save_completed_main_button_title),
-                    style = ChacTextStyles.Btn,
-                )
-            }
+            Text(
+                text = stringResource(R.string.save_completed_main_button_title),
+                style = ChacTextStyles.Btn,
+            )
         }
     }
 }
@@ -197,7 +170,6 @@ private fun SaveCompletedScreenPreview() {
             title = "Jeju Trip",
             savedCount = 12,
             onClose = {},
-            onClickToGallery = {},
             onClickToList = {},
         )
     }

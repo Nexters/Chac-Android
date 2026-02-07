@@ -38,7 +38,6 @@ import androidx.compose.ui.zIndex
 import com.chac.core.designsystem.ui.component.ChacImage
 import com.chac.core.designsystem.ui.icon.ArrowRight
 import com.chac.core.designsystem.ui.icon.ChacIcons
-import com.chac.core.designsystem.ui.icon.SaveAll
 import com.chac.core.designsystem.ui.icon.SaveCompletedBadge
 import com.chac.core.designsystem.ui.theme.ChacColors
 import com.chac.core.designsystem.ui.theme.ChacTextStyles
@@ -55,8 +54,7 @@ import com.chac.feature.album.model.SaveUiStatus
  * @param clusters 클러스터 UI 모델 목록
  * @param clusterCardBackgroundColor 각 클러스터 카드 배경색을 반환하는 함수.
  * 리스트 외부에서 배경색 정책을 주입할 수 있도록 노출해, 화면/상태별로 규칙을 변경할 때 사용한다.
- * @param onClickSavePartial '사진 정리하기' 버튼 클릭 이벤트 콜백
- * @param onClickSaveAll '그대로 저장' 버튼 클릭 이벤트 콜백
+ * @param onClickCluster 클러스터 카드 클릭 이벤트 콜백
  */
 @Composable
 fun ClusterList(
@@ -71,8 +69,7 @@ fun ClusterList(
         )
         colors[index % colors.size]
     },
-    onClickSavePartial: (MediaClusterUiModel) -> Unit,
-    onClickSaveAll: (MediaClusterUiModel) -> Unit,
+    onClickCluster: (MediaClusterUiModel) -> Unit,
 ) {
     LazyColumn(
         modifier = modifier.fillMaxSize(),
@@ -83,8 +80,7 @@ fun ClusterList(
             ClusterCard(
                 cluster = cluster,
                 backgroundColor = clusterCardBackgroundColor(cluster, index),
-                onClickSavePartial = { onClickSavePartial(cluster) },
-                onClickSaveAll = { onClickSaveAll(cluster) },
+                onClick = { onClickCluster(cluster) },
             )
         }
     }
@@ -95,16 +91,14 @@ fun ClusterList(
  *
  * @param cluster 표시할 클러스터 모델
  * @param backgroundColor 카드 배경색
- * @param onClickSavePartial '사진 정리하기' 버튼 클릭 이벤트 콜백
- * @param onClickSaveAll '그대로 저장' 버튼 클릭 이벤트 콜백
+ * @param onClick 카드 클릭 이벤트 콜백
  */
 @Composable
 private fun ClusterCard(
     cluster: MediaClusterUiModel,
     backgroundColor: Color,
     modifier: Modifier = Modifier,
-    onClickSavePartial: () -> Unit,
-    onClickSaveAll: () -> Unit,
+    onClick: () -> Unit,
 ) {
     val isDimmed = cluster.saveStatus != SaveUiStatus.Default
     val saveStatusText = when (cluster.saveStatus) {
@@ -116,7 +110,12 @@ private fun ClusterCard(
 
     Box(modifier = modifier.fillMaxWidth()) {
         Card(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(
+                    enabled = !isDimmed,
+                    onClick = onClick,
+                ),
             colors = CardDefaults.cardColors(
                 containerColor = backgroundColor,
             ),
@@ -150,22 +149,10 @@ private fun ClusterCard(
 
                     Spacer(modifier = Modifier.height(12.dp))
 
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(space = 8.dp),
-                    ) {
-                        SaveAllCircleButton(
-                            enabled = !isDimmed,
-                            onClick = onClickSaveAll,
-                        )
-
-                        SavePartialPillButton(
-                            enabled = !isDimmed,
-                            onClick = onClickSavePartial,
-                            modifier = Modifier.weight(1f),
-                        )
-                    }
+                    SavePartialPillButton(
+                        enabled = !isDimmed,
+                        onClick = onClick,
+                    )
                 }
             }
         }
@@ -187,6 +174,47 @@ private fun ClusterCard(
                     .zIndex(1f),
             )
         }
+    }
+}
+
+/**
+ * 클러스터의 일부 항목을 정리해 저장하는 필 버튼을 표시한다.
+ *
+ * @param enabled 버튼 활성화 여부
+ * @param onClick 버튼 클릭 이벤트 콜백
+ */
+@Composable
+private fun SavePartialPillButton(
+    enabled: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier
+            .height(40.dp)
+            .clip(CircleShape)
+            .background(ChacColors.Ffffff80)
+            .clickable(
+                enabled = enabled,
+                onClick = onClick,
+            )
+            .padding(horizontal = 28.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Center,
+    ) {
+        Text(
+            text = stringResource(R.string.clustering_action_organize),
+            style = ChacTextStyles.SubBtn,
+            color = ChacColors.TextBtn02,
+        )
+
+        Spacer(modifier = Modifier.size(8.dp))
+
+        Icon(
+            imageVector = ChacIcons.ArrowRight,
+            contentDescription = null,
+            tint = ChacColors.TextBtn02,
+        )
     }
 }
 
@@ -289,78 +317,6 @@ private fun ClusterThumbnailStack(
     }
 }
 
-/**
- * 클러스터의 모든 항목을 저장하는 원형 버튼을 표시한다.
- *
- * @param enabled 버튼 활성화 여부
- * @param onClick 버튼 클릭 이벤트 콜백
- */
-@Composable
-private fun SaveAllCircleButton(
-    enabled: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Box(
-        modifier = modifier
-            .clip(CircleShape)
-            .background(color = ChacColors.Ffffff40)
-            .clickable(
-                enabled = enabled,
-                onClick = onClick,
-            )
-            .padding(all = 14.dp),
-        contentAlignment = Alignment.Center,
-    ) {
-        Icon(
-            imageVector = ChacIcons.SaveAll,
-            contentDescription = null,
-            tint = ChacColors.TextBtn01,
-        )
-    }
-}
-
-/**
- * 클러스터의 일부 항목을 정리해 저장하는 필 버튼을 표시한다.
- *
- * @param enabled 버튼 활성화 여부
- * @param onClick 버튼 클릭 이벤트 콜백
- */
-@Composable
-private fun SavePartialPillButton(
-    enabled: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Row(
-        modifier = modifier
-            .height(40.dp)
-            .clip(CircleShape)
-            .background(ChacColors.Ffffff80)
-            .clickable(
-                enabled = enabled,
-                onClick = onClick,
-            )
-            .padding(horizontal = 28.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.Center,
-    ) {
-        Text(
-            text = stringResource(R.string.clustering_action_organize),
-            style = ChacTextStyles.SubBtn,
-            color = ChacColors.TextBtn02,
-        )
-
-        Spacer(modifier = Modifier.size(8.dp))
-
-        Icon(
-            imageVector = ChacIcons.ArrowRight,
-            contentDescription = null,
-            tint = ChacColors.TextBtn02,
-        )
-    }
-}
-
 @Preview(showBackground = true)
 @Composable
 private fun ClusterListPreview() {
@@ -411,8 +367,7 @@ private fun ClusterListPreview() {
 
         ClusterList(
             clusters = sampleClusters,
-            onClickSavePartial = {},
-            onClickSaveAll = {},
+            onClickCluster = {},
         )
     }
 }

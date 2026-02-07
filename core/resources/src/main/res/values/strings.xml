@@ -9,7 +9,6 @@
     <string name="clustering_default_album_title">앨범</string>
     <string name="clustering_photo_count">%1$s장의 사진</string>
     <string name="clustering_action_organize">정리하기</string>
-    <string name="clustering_action_keep">그대로 저장</string>
     <string name="clustering_saveing_badge">저장 중…</string>
     <string name="clustering_save_completed_badge">저장 완료</string>
     <string name="clustering_loading_message">앨범을 생성하는 중입니다.\n잠시만 기다려주세요!</string>
@@ -17,7 +16,6 @@
     <string name="clustering_empty_message">정리할 사진이 없습니다.\n사진을 올리면 앨범을 착 정리할게요!</string>
     <string name="clustering_permission_message">앨범을 생성하려면\n사진 접근 권한이 필요해요.</string>
     <string name="clustering_permission_action">설정으로 이동</string>
-    <string name="clustering_keep_saved_toast">앨범이 갤러리에 저장되었습니다.</string>
     <string name="clustering_worker_fail_title">클러스터링 실패</string>
     <string name="clustering_worker_progress_title">클러스터링 중</string>
     <string name="gallery_top_bar_title">사진 정리</string>
@@ -33,7 +31,6 @@
     <string name="gallery_exit_confirm">확인</string>
     <string name="save_completed_title">저장 완료</string>
     <string name="save_completed_message">총 %1$d장의 사진이 포함된 앨범을\n갤러리에 저장했어요.</string>
-    <string name="save_completed_sub_button_title">갤러리로</string>
     <string name="save_completed_main_button_title">메인으로</string>
     <string name="save_completed_close_cd">저장 완료 닫기</string>
 </resources>
