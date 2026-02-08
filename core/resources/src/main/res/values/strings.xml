@@ -23,10 +23,13 @@
     <string name="gallery_slash">/</string>
     <string name="gallery_select_prompt">사진을 선택해주세요</string>
     <string name="gallery_save_album_count">%1$d장의 사진 앨범에 저장</string>
+    <string name="gallery_next">다음</string>
     <string name="gallery_exit_title">페이지 나가기</string>
     <string name="gallery_exit_message">선택된 내용은 저장되지 않습니다.\n페이지를 나가겠어요?</string>
     <string name="gallery_exit_cancel">취소</string>
     <string name="gallery_exit_confirm">확인</string>
+    <string name="album_name_edit_title">앨범명 변경</string>
+    <string name="album_name_edit_label">앨범명</string>
     <string name="save_completed_title">저장 완료</string>
     <string name="save_completed_message">총 %1$d장의 사진이 포함된 앨범을\n갤러리에 저장했어요.</string>
     <string name="save_completed_main_button_title">메인으로</string>

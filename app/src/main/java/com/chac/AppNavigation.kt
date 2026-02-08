@@ -52,6 +52,15 @@ fun ChacAppNavigation() {
                     onLongClickMediaItem = { clusterId, mediaId ->
                         backStack.add(AlbumNavKey.MediaPreview(clusterId, mediaId))
                     },
+                    onClickAlbumNameEdit = { source, selectedIds, defaultAlbumName ->
+                        backStack.add(
+                            AlbumNavKey.AlbumNameEdit(
+                                source = source,
+                                selectedIds = selectedIds,
+                                defaultAlbumName = defaultAlbumName,
+                            ),
+                        )
+                    },
                     onClickSettings = {
                         backStack.add(AlbumNavKey.Settings)
                     },

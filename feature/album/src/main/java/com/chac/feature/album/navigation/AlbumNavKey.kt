@@ -51,4 +51,23 @@ sealed interface AlbumNavKey : NavKey {
     /** 설정 화면 */
     @Serializable
     data object Settings : AlbumNavKey
+
+    /** 앨범명 변경 화면 */
+    @Serializable
+    data class AlbumNameEdit(
+        val source: AlbumNameEditSource,
+        val selectedIds: LongArray,
+        val defaultAlbumName: String,
+    ) : AlbumNavKey
+}
+
+@Serializable
+sealed interface AlbumNameEditSource {
+    @Serializable
+    data class Cluster(
+        val clusterId: Long,
+    ) : AlbumNameEditSource
+
+    @Serializable
+    data object AllPhotos : AlbumNameEditSource
 }
