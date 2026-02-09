@@ -42,6 +42,9 @@ internal class MediaRepositoryImpl @Inject constructor(
     private val _allMediaState = MutableStateFlow<List<Media>?>(null)
     override val allMediaState: StateFlow<List<Media>?> = _allMediaState
 
+    /** 저장 처리로 인해 제거된 미디어 ID를 누적한다. (클러스터 생성 중 재노출 방지) */
+    private val removedMediaIdsState = MutableStateFlow<Set<Long>>(emptySet())
+
     override fun getClusteredMediaStream(): Flow<MediaCluster> = flow {
         // 현재 스냅샷이 있으면 재계산 없이 그대로 방출한다.
         val cached = _clusteredMediaState.value
@@ -53,9 +56,14 @@ internal class MediaRepositoryImpl @Inject constructor(
         }
 
         createClusteredMedia { cluster ->
-            emit(cluster)
+            val removedIds = removedMediaIdsState.value
+            val filteredMedia = cluster.mediaList.filterNot { it.id in removedIds }
+            if (filteredMedia.isEmpty()) return@createClusteredMedia
+
+            val filteredCluster = cluster.copy(mediaList = filteredMedia)
+            emit(filteredCluster)
             // 클러스터링 중에도 saveAlbum()이 상태를 수정할 수 있도록 점진적으로 반영한다.
-            _clusteredMediaState.update { (it ?: emptyList()) + cluster }
+            _clusteredMediaState.update { (it ?: emptyList()) + filteredCluster }
         }
     }
 
@@ -131,6 +139,7 @@ internal class MediaRepositoryImpl @Inject constructor(
         if (savedMedia.isEmpty()) return emptyList()
 
         val savedIds = savedMedia.map { it.id }.toHashSet()
+        removedMediaIdsState.update { it + savedIds }
         // 대상 클러스터에서 저장된 항목을 제거하고, 비어 있으면 클러스터 자체를 삭제한다.
         _clusteredMediaState.update { clusters ->
             clusters?.mapNotNull { cached ->
