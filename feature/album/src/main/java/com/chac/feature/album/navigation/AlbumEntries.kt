@@ -14,6 +14,7 @@ import com.chac.feature.album.settings.SettingsRoute
  * 앨범 목적지를 Navigation3 entry provider에 등록한다
  *
  * @param onClickCluster 클러스터 카드 클릭 이벤트 콜백 (clusterId)
+ * @param onClickAllPhotos '모든 사진' 버튼 클릭 이벤트 콜백
  * @param onLongClickMediaItem 미디어 아이템의 롱클릭 이벤트 콜백 (clusterId, mediaId). 전체 사진 모드에서는 clusterId가 null이다.
  * @param onClickSettings 설정 화면 이동 콜백
  * @param onSaveCompleted 저장 완료 이후 동작을 전달하는 콜백
@@ -23,6 +24,7 @@ import com.chac.feature.album.settings.SettingsRoute
  */
 fun EntryProviderScope<NavKey>.albumEntries(
     onClickCluster: (Long) -> Unit,
+    onClickAllPhotos: () -> Unit,
     onLongClickMediaItem: (Long?, Long) -> Unit,
     onClickSettings: () -> Unit,
     onSaveCompleted: (String, Int) -> Unit,
@@ -33,6 +35,7 @@ fun EntryProviderScope<NavKey>.albumEntries(
     entry(AlbumNavKey.Clustering) { _ ->
         ClusteringRoute(
             onClickCluster = onClickCluster,
+            onClickAllPhotos = onClickAllPhotos,
             onClickSettings = onClickSettings,
         )
     }

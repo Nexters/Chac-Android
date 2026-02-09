@@ -58,12 +58,14 @@ import com.chac.feature.album.model.MediaUiModel
  *
  * @param viewModel 클러스터링 화면 ViewModel
  * @param onClickCluster 클러스터 카드 클릭 이벤트 콜백
+ * @param onClickAllPhotos 전체 사진 갤러리 이동 콜백
  * @param onClickSettings 설정 버튼 클릭 이벤트 콜백
  */
 @Composable
 fun ClusteringRoute(
     viewModel: ClusteringViewModel = hiltViewModel(),
     onClickCluster: (Long) -> Unit,
+    onClickAllPhotos: () -> Unit,
     onClickSettings: () -> Unit,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -107,6 +109,7 @@ fun ClusteringRoute(
     ClusteringScreen(
         uiState = uiState,
         onClickCluster = onClickCluster,
+        onClickAllPhotos = onClickAllPhotos,
         onClickSettings = onClickSettings,
     )
 }
@@ -116,12 +119,14 @@ fun ClusteringRoute(
  *
  * @param uiState 클러스터링 화면 상태
  * @param onClickCluster 클러스터 카드 클릭 이벤트 콜백
+ * @param onClickAllPhotos 전체 사진 갤러리 이동 콜백
  * @param onClickSettings 설정 버튼 클릭 이벤트 콜백
  */
 @Composable
 private fun ClusteringScreen(
     uiState: ClusteringUiState,
     onClickCluster: (Long) -> Unit,
+    onClickAllPhotos: () -> Unit,
     onClickSettings: () -> Unit = {},
 ) {
     val context = LocalContext.current
@@ -154,6 +159,7 @@ private fun ClusteringScreen(
                         isGenerating = isGenerating,
                         totalPhotoCount = uiState.totalPhotoCount,
                         clusters = clusters,
+                        onClickAllPhotos = onClickAllPhotos,
                     )
 
                     Box(Modifier.weight(1f)) {
@@ -182,12 +188,14 @@ private fun ClusteringScreen(
  * @param isGenerating 클러스터 리스트가 로딩상태인지 여부
  * @param totalPhotoCount 전체 사진 개수
  * @param clusters 클러스터 리스트
+ * @param onClickAllPhotos 전체 사진 요약 카드 클릭 이벤트 콜백
  */
 @Composable
 private fun CommonSectionOfPermissionGranted(
     isGenerating: Boolean,
     totalPhotoCount: Int,
     clusters: List<MediaClusterUiModel>,
+    onClickAllPhotos: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier) {
@@ -199,7 +207,10 @@ private fun CommonSectionOfPermissionGranted(
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        TotalPhotoSummary(totalCount = totalPhotoCount)
+        TotalPhotoSummary(
+            totalCount = totalPhotoCount,
+            onClick = onClickAllPhotos,
+        )
 
         Spacer(modifier = Modifier.height(40.dp))
 
@@ -333,6 +344,7 @@ private fun ClusteringScreenPreview(
         ClusteringScreen(
             uiState = uiState,
             onClickCluster = {},
+            onClickAllPhotos = {},
         )
     }
 }
