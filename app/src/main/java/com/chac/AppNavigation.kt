@@ -49,6 +49,9 @@ fun ChacAppNavigation() {
                     onClickAllPhotos = {
                         backStack.add(AlbumNavKey.AllPhotosGallery)
                     },
+                    onClickNextInGallery = { clusterId, selectedMediaIds ->
+                        backStack.add(AlbumNavKey.AlbumTitleEdit(clusterId, selectedMediaIds))
+                    },
                     onLongClickMediaItem = { clusterId, mediaId ->
                         backStack.add(
                             if (clusterId == null) {

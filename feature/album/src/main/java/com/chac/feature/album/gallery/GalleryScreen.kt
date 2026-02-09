@@ -1,6 +1,5 @@
 package com.chac.feature.album.gallery
 
-import android.provider.MediaStore
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
@@ -43,13 +42,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
-import androidx.core.net.toUri
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.chac.core.designsystem.ui.component.ChacImage
@@ -62,7 +59,6 @@ import com.chac.core.designsystem.ui.modifier.verticalScrollFadingEdge
 import com.chac.core.designsystem.ui.theme.ChacColors
 import com.chac.core.designsystem.ui.theme.ChacTextStyles
 import com.chac.core.designsystem.ui.theme.ChacTheme
-import com.chac.core.permission.compose.rememberWriteRequestLauncher
 import com.chac.core.resources.R
 import com.chac.domain.album.media.model.MediaType
 import com.chac.feature.album.gallery.model.GalleryUiState
@@ -74,7 +70,7 @@ import com.chac.feature.album.model.MediaUiModel
  *
  * @param clusterId 화면에 표시할 클러스터 ID
  * @param viewModel 갤러리 화면의 뷰모델
- * @param onSaveCompleted 저장 완료 이후 동작을 전달하는 콜백
+ * @param onClickNext '다음' 버튼 클릭 이벤트 콜백 (selectedMediaIds)
  * @param onLongClickMediaItem 미디어 아이템의 롱클릭 이벤트 콜백
  * @param onClickBack 뒤로가기 버튼 클릭 이벤트 콜백
  */
@@ -82,7 +78,7 @@ import com.chac.feature.album.model.MediaUiModel
 fun GalleryRoute(
     clusterId: Long,
     viewModel: GalleryViewModel = hiltViewModel(),
-    onSaveCompleted: (String, Int) -> Unit,
+    onClickNext: (List<Long>) -> Unit,
     onLongClickMediaItem: (Long?, Long) -> Unit,
     onClickBack: () -> Unit,
 ) {
@@ -91,18 +87,9 @@ fun GalleryRoute(
     val title = cluster.address.ifBlank {
         cluster.formattedDate.ifBlank { stringResource(R.string.clustering_default_album_title) }
     }
-    val context = LocalContext.current
-
-    val writeRequestLauncher = rememberWriteRequestLauncher(
-        onGranted = { viewModel.saveSelectedMedia() },
-    )
 
     LaunchedEffect(viewModel, clusterId) {
         viewModel.initialize(clusterId)
-
-        viewModel.saveCompletedEvents.collect { event ->
-            onSaveCompleted(event.title, event.savedCount)
-        }
     }
 
     GalleryScreen(
@@ -117,17 +104,9 @@ fun GalleryRoute(
             }
         },
         onClickSave = {
-            val selectedMediaList = viewModel.getSelectedMediaList()
-
-            if (selectedMediaList.isEmpty()) return@GalleryScreen
-
-            val uris = selectedMediaList.map { it.uriString.toUri() }
-            val intentSender = MediaStore.createWriteRequest(
-                context.contentResolver,
-                uris,
-            ).intentSender
-
-            writeRequestLauncher(intentSender)
+            val selectedIds = viewModel.getSelectedMediaIds()
+            if (selectedIds.isEmpty()) return@GalleryScreen
+            onClickNext(selectedIds)
         },
         onLongClickMediaItem = { mediaId ->
             onLongClickMediaItem(clusterId, mediaId)
@@ -140,21 +119,18 @@ fun GalleryRoute(
  * 전체 사진 갤러리 화면 라우트
  *
  * @param viewModel 갤러리 화면의 뷰모델
+ * @param onClickNext '다음' 버튼 클릭 이벤트 콜백 (selectedMediaIds)
  * @param onLongClickMediaItem 미디어 아이템의 롱클릭 이벤트 콜백
  * @param onClickBack 뒤로가기 버튼 클릭 이벤트 콜백
  */
 @Composable
 fun AllPhotosGalleryRoute(
     viewModel: GalleryViewModel = hiltViewModel(),
+    onClickNext: (List<Long>) -> Unit,
     onLongClickMediaItem: (Long?, Long) -> Unit,
     onClickBack: () -> Unit,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val context = LocalContext.current
-
-    val writeRequestLauncher = rememberWriteRequestLauncher(
-        onGranted = { viewModel.saveSelectedMedia() },
-    )
 
     LaunchedEffect(viewModel) {
         viewModel.initializeAllPhotos()
@@ -172,17 +148,9 @@ fun AllPhotosGalleryRoute(
             }
         },
         onClickSave = {
-            val selectedMediaList = viewModel.getSelectedMediaList()
-
-            if (selectedMediaList.isEmpty()) return@GalleryScreen
-
-            val uris = selectedMediaList.map { it.uriString.toUri() }
-            val intentSender = MediaStore.createWriteRequest(
-                context.contentResolver,
-                uris,
-            ).intentSender
-
-            writeRequestLauncher(intentSender)
+            val selectedIds = viewModel.getSelectedMediaIds()
+            if (selectedIds.isEmpty()) return@GalleryScreen
+            onClickNext(selectedIds)
         },
         onLongClickMediaItem = { mediaId ->
             // 전체 사진 모드에서는 전체 사진 목록 기준으로 미리보기를 표시한다.

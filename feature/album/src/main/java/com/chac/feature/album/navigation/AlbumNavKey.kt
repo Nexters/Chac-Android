@@ -58,6 +58,18 @@ sealed interface AlbumNavKey : NavKey {
         val savedCount: Int,
     ) : AlbumNavKey
 
+    /**
+     * 앨범명 수정 화면
+     *
+     * @param clusterId 저장 대상 클러스터 ID (전체 사진 저장의 경우 null)
+     * @param selectedMediaIds 저장 대상 미디어 ID 목록
+     */
+    @Serializable
+    data class AlbumTitleEdit(
+        val clusterId: Long?,
+        val selectedMediaIds: List<Long>,
+    ) : AlbumNavKey
+
     /** 설정 화면 */
     @Serializable
     data object Settings : AlbumNavKey

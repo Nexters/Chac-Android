@@ -6,20 +6,15 @@ import com.chac.domain.album.media.usecase.GetAllMediaStateUseCase
 import com.chac.domain.album.media.usecase.GetClusteredMediaStateUseCase
 import com.chac.domain.album.media.usecase.SaveAlbumUseCase
 import com.chac.feature.album.gallery.model.GalleryUiState
-import com.chac.feature.album.gallery.model.SaveCompletedEvent
-import com.chac.feature.album.mapper.toDomain
 import com.chac.feature.album.mapper.toUiModel
 import com.chac.feature.album.model.MediaClusterUiModel
 import com.chac.feature.album.model.MediaUiModel
-
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.retryWhen
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -39,13 +34,9 @@ class GalleryViewModel @Inject constructor(
     private val _uiState = MutableStateFlow<GalleryUiState>(GalleryUiState.NoneSelected(EMPTY_CLUSTER))
     val uiState: StateFlow<GalleryUiState> = _uiState.asStateFlow()
 
-    private val saveCompletedEventsChannel = Channel<SaveCompletedEvent>(capacity = Channel.BUFFERED)
-    val saveCompletedEvents = saveCompletedEventsChannel.receiveAsFlow()
-
     /** 클러스터 캐시 스냅샷 상태를 Collect하는 코루틴 Job */
     private var clusterStateCollectJob: Job? = null
     private var clusterId: Long? = null
-    private var saveJob: Job? = null
     private var allMediaCollectJob: Job? = null
 
     init {
@@ -102,6 +93,7 @@ class GalleryViewModel @Inject constructor(
                                     GalleryUiState.SomeSelected(newCluster, kept)
                                 }
                             }
+
                             is GalleryUiState.Saving -> GalleryUiState.Saving(newCluster, current.selectedIds)
                         }
                     }
@@ -152,45 +144,10 @@ class GalleryViewModel @Inject constructor(
         _uiState.value = GalleryUiState.NoneSelected(state.cluster)
     }
 
-    /** 선택된 미디어를 앨범으로 저장한다 */
-    fun saveSelectedMedia() {
-        if (saveJob?.isActive == true) return
-        val state = _uiState.value
-        val selectedIds = (state as? GalleryUiState.SomeSelected)?.selectedIds.orEmpty()
-        if (selectedIds.isEmpty()) return
-
-        val savingState = GalleryUiState.Saving(state.cluster, selectedIds)
-        _uiState.value = savingState
-
-        saveJob = viewModelScope.launch {
-            try {
-                val domainCluster = savingState.cluster.toDomain()
-                val selectedCluster = domainCluster.copy(
-                    mediaList = domainCluster.mediaList.filter { it.id in selectedIds },
-                )
-                val defaultAlbumTitle = "${savingState.cluster.formattedDate} ${savingState.cluster.address}".trim()
-                val result = runCatching {
-                    val savedMediaList = saveAlbumUseCase(selectedCluster, defaultAlbumTitle)
-                    savedMediaList.size
-                }
-                if (result.isSuccess) {
-                    saveCompletedEventsChannel.trySend(
-                        SaveCompletedEvent(defaultAlbumTitle, result.getOrNull() ?: 0),
-                    )
-                } else {
-                    _uiState.value = GalleryUiState.SomeSelected(savingState.cluster, selectedIds)
-                    Timber.e(result.exceptionOrNull(), "Failed to save selected media")
-                }
-            } finally {
-                saveJob = null
-            }
-        }
-    }
-
     /**
-     * 현재 선택된 미디어 목록을 반환한다.
+     * 현재 선택된 미디어 ID 목록을 반환한다.
      */
-    fun getSelectedMediaList(): List<MediaUiModel> {
+    fun getSelectedMediaIds(): List<Long> {
         val state = _uiState.value
 
         val selectedIds = when (state) {
@@ -198,8 +155,12 @@ class GalleryViewModel @Inject constructor(
             is GalleryUiState.Saving -> state.selectedIds
             else -> emptySet()
         }
+
         if (selectedIds.isEmpty()) return emptyList()
-        return state.cluster.mediaList.filter { it.id in selectedIds }
+
+        return state.cluster.mediaList
+            .filter { it.id in selectedIds }
+            .map { it.id }
     }
 
     /**
@@ -227,6 +188,7 @@ class GalleryViewModel @Inject constructor(
                                 updatedCluster.copy(
                                     thumbnailUriStrings = current.cluster.thumbnailUriStrings,
                                 )
+
                             else -> updatedCluster
                         }
                         // 현재 상태 타입과 선택 상태를 유지하면서 클러스터만 갱신한다.
@@ -241,6 +203,7 @@ class GalleryViewModel @Inject constructor(
                                     GalleryUiState.SomeSelected(newCluster, kept)
                                 }
                             }
+
                             is GalleryUiState.Saving -> GalleryUiState.Saving(newCluster, current.selectedIds)
                         }
                     }

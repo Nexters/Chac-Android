@@ -7,6 +7,7 @@ import com.chac.feature.album.gallery.AllPhotosGalleryRoute
 import com.chac.feature.album.gallery.GalleryRoute
 import com.chac.feature.album.gallery.component.AllPhotosMediaPreviewRoute
 import com.chac.feature.album.gallery.component.MediaPreviewRoute
+import com.chac.feature.album.save.AlbumTitleEditRoute
 import com.chac.feature.album.save.SaveCompletedRoute
 import com.chac.feature.album.settings.SettingsRoute
 
@@ -15,6 +16,7 @@ import com.chac.feature.album.settings.SettingsRoute
  *
  * @param onClickCluster 클러스터 카드 클릭 이벤트 콜백 (clusterId)
  * @param onClickAllPhotos '모든 사진' 버튼 클릭 이벤트 콜백
+ * @param onClickNextInGallery 갤러리 화면에서 '다음' 버튼 클릭 이벤트 콜백 (clusterId, selectedMediaIds). 전체 사진 저장 시 clusterId는 null이다.
  * @param onLongClickMediaItem 미디어 아이템의 롱클릭 이벤트 콜백 (clusterId, mediaId). 전체 사진 모드에서는 clusterId가 null이다.
  * @param onClickSettings 설정 화면 이동 콜백
  * @param onSaveCompleted 저장 완료 이후 동작을 전달하는 콜백
@@ -25,6 +27,7 @@ import com.chac.feature.album.settings.SettingsRoute
 fun EntryProviderScope<NavKey>.albumEntries(
     onClickCluster: (Long) -> Unit,
     onClickAllPhotos: () -> Unit,
+    onClickNextInGallery: (Long?, List<Long>) -> Unit,
     onLongClickMediaItem: (Long?, Long) -> Unit,
     onClickSettings: () -> Unit,
     onSaveCompleted: (String, Int) -> Unit,
@@ -41,6 +44,7 @@ fun EntryProviderScope<NavKey>.albumEntries(
     }
     entry(AlbumNavKey.AllPhotosGallery) { _ ->
         AllPhotosGalleryRoute(
+            onClickNext = { onClickNextInGallery(null, it) },
             onLongClickMediaItem = onLongClickMediaItem,
             onClickBack = onClickBack,
         )
@@ -48,7 +52,7 @@ fun EntryProviderScope<NavKey>.albumEntries(
     entry<AlbumNavKey.Gallery> { key ->
         GalleryRoute(
             clusterId = key.clusterId,
-            onSaveCompleted = onSaveCompleted,
+            onClickNext = { onClickNextInGallery(key.clusterId, it) },
             onLongClickMediaItem = onLongClickMediaItem,
             onClickBack = onClickBack,
         )
@@ -72,6 +76,14 @@ fun EntryProviderScope<NavKey>.albumEntries(
             savedCount = key.savedCount,
             onClose = onCloseSaveCompleted,
             onClickToList = onClickToList,
+        )
+    }
+    entry<AlbumNavKey.AlbumTitleEdit> { key ->
+        AlbumTitleEditRoute(
+            clusterId = key.clusterId,
+            selectedMediaIds = key.selectedMediaIds,
+            onSaveCompleted = onSaveCompleted,
+            onClickBack = onClickBack,
         )
     }
     entry(AlbumNavKey.Settings) { _ ->
