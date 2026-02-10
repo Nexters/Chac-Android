@@ -150,6 +150,11 @@ fun AllPhotosGalleryRoute(
     onClickBack: () -> Unit,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+
+    val writeRequestLauncher = rememberWriteRequestLauncher(
+        onGranted = { viewModel.saveSelectedMedia() },
+    )
 
     LaunchedEffect(viewModel) {
         viewModel.initializeAllPhotos()
@@ -158,9 +163,27 @@ fun AllPhotosGalleryRoute(
     GalleryScreen(
         uiState = uiState,
         title = stringResource(R.string.clustering_total_photo_title),
-        onToggleMedia = {},
-        onClickSelectAll = {},
-        onClickSave = {},
+        onToggleMedia = viewModel::toggleSelection,
+        onClickSelectAll = { selected: Boolean ->
+            if (selected) {
+                viewModel.selectAll()
+            } else {
+                viewModel.clearSelection()
+            }
+        },
+        onClickSave = {
+            val selectedMediaList = viewModel.getSelectedMediaList()
+
+            if (selectedMediaList.isEmpty()) return@GalleryScreen
+
+            val uris = selectedMediaList.map { it.uriString.toUri() }
+            val intentSender = MediaStore.createWriteRequest(
+                context.contentResolver,
+                uris,
+            ).intentSender
+
+            writeRequestLauncher(intentSender)
+        },
         onLongClickMediaItem = { mediaId ->
             // 전체 사진 모드에서는 전체 사진 목록 기준으로 미리보기를 표시한다.
             onLongClickMediaItem(null, mediaId)
