@@ -125,6 +125,9 @@ private fun ChacNavHost(
                     onClickCluster = { clusterId ->
                         backStack.add(AlbumNavKey.Gallery(clusterId))
                     },
+                    onClickAiOrganize = {
+                        backStack.add(AlbumNavKey.AiOrganize)
+                    },
                     onClickAllPhotos = {
                         backStack.add(AlbumNavKey.AllPhotosGallery)
                     },

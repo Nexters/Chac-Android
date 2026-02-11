@@ -63,6 +63,7 @@ import com.chac.feature.album.model.MediaUiModel
  *
  * @param viewModel 클러스터링 화면 ViewModel
  * @param onClickCluster 클러스터 카드 클릭 이벤트 콜백
+ * @param onClickAiOrganize AI 정리 화면 이동 콜백
  * @param onClickAllPhotos 전체 사진 갤러리 이동 콜백
  * @param onClickSettings 설정 버튼 클릭 이벤트 콜백
  */
@@ -70,6 +71,7 @@ import com.chac.feature.album.model.MediaUiModel
 fun ClusteringRoute(
     viewModel: ClusteringViewModel = hiltViewModel(),
     onClickCluster: (Long) -> Unit,
+    onClickAiOrganize: () -> Unit,
     onClickAllPhotos: () -> Unit,
     onClickSettings: () -> Unit,
 ) {
@@ -109,6 +111,7 @@ fun ClusteringRoute(
     ClusteringScreen(
         uiState = uiState,
         onClickCluster = onClickCluster,
+        onClickAiOrganize = onClickAiOrganize,
         onClickAllPhotos = onClickAllPhotos,
         onClickSettings = onClickSettings,
     )
@@ -119,6 +122,7 @@ fun ClusteringRoute(
  *
  * @param uiState 클러스터링 화면 상태
  * @param onClickCluster 클러스터 카드 클릭 이벤트 콜백
+ * @param onClickAiOrganize AI 정리 화면 이동 콜백
  * @param onClickAllPhotos 전체 사진 갤러리 이동 콜백
  * @param onClickSettings 설정 버튼 클릭 이벤트 콜백
  */
@@ -126,6 +130,7 @@ fun ClusteringRoute(
 private fun ClusteringScreen(
     uiState: ClusteringUiState,
     onClickCluster: (Long) -> Unit,
+    onClickAiOrganize: () -> Unit,
     onClickAllPhotos: () -> Unit,
     onClickSettings: () -> Unit = {},
 ) {
@@ -177,6 +182,7 @@ private fun ClusteringScreen(
                         isGenerating = isGenerating,
                         totalPhotoCount = uiState.totalPhotoCount,
                         clusters = clusters,
+                        onClickAiOrganize = onClickAiOrganize,
                         onClickAllPhotos = onClickAllPhotos,
                     )
 
@@ -206,6 +212,7 @@ private fun ClusteringScreen(
  * @param isGenerating 클러스터 리스트가 로딩상태인지 여부
  * @param totalPhotoCount 전체 사진 개수
  * @param clusters 클러스터 리스트
+ * @param onClickAiOrganize AI 정리 버튼 클릭 이벤트 콜백
  * @param onClickAllPhotos 전체 사진 요약 카드 클릭 이벤트 콜백
  */
 @Composable
@@ -213,6 +220,7 @@ private fun CommonSectionOfPermissionGranted(
     isGenerating: Boolean,
     totalPhotoCount: Int,
     clusters: List<MediaClusterUiModel>,
+    onClickAiOrganize: () -> Unit,
     onClickAllPhotos: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -222,6 +230,22 @@ private fun CommonSectionOfPermissionGranted(
             style = ChacTextStyles.Headline01,
             color = ChacColors.Text01,
         )
+
+        Spacer(modifier = Modifier.height(14.dp))
+
+        Button(
+            onClick = onClickAiOrganize,
+            colors = ButtonDefaults.buttonColors(
+                containerColor = ChacColors.BackgroundPopup,
+                contentColor = ChacColors.Text01,
+            ),
+            shape = RoundedCornerShape(12.dp),
+        ) {
+            Text(
+                text = stringResource(R.string.clustering_ai_organize_action),
+                style = ChacTextStyles.Caption,
+            )
+        }
 
         Spacer(modifier = Modifier.height(20.dp))
 
@@ -362,6 +386,7 @@ private fun ClusteringScreenPreview(
         ClusteringScreen(
             uiState = uiState,
             onClickCluster = {},
+            onClickAiOrganize = {},
             onClickAllPhotos = {},
         )
     }
