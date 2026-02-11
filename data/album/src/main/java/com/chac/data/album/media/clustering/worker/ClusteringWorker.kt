@@ -3,6 +3,7 @@ package com.chac.data.album.media.clustering.worker
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
+import android.content.pm.ServiceInfo
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import androidx.hilt.work.HiltWorker
@@ -39,6 +40,7 @@ class ClusteringWorker @AssistedInject constructor(
     override suspend fun getForegroundInfo(): ForegroundInfo = ForegroundInfo(
         getNotificationId(),
         createNotificationBuilder().build(),
+        ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC,
     )
 
     private fun initNotification() {
