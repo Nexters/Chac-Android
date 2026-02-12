@@ -6,6 +6,8 @@ plugins {
     alias(libs.plugins.chac.android.compose)
     alias(libs.plugins.chac.android.hilt)
     alias(libs.plugins.oss.licenses)
+    alias(libs.plugins.google.services)
+    alias(libs.plugins.firebase.crashlytics)
 }
 
 android {
@@ -55,6 +57,10 @@ dependencies {
     // Hilt work
     implementation(libs.hilt.ext.work)
     ksp(libs.hilt.ext.compiler)
+
+    // Firebase
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.crashlytics)
 
     // OSS Licenses
     implementation(libs.play.services.oss.licenses)
