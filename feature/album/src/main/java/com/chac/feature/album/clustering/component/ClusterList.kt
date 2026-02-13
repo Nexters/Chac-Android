@@ -173,6 +173,7 @@ private fun ClusterCard(
         Card(
             modifier = Modifier
                 .fillMaxWidth()
+                .clip(shape = cardShape)
                 .clickable(onClick = onClick),
             colors = CardDefaults.cardColors(
                 containerColor = backgroundColor,
