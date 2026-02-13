@@ -8,12 +8,11 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -33,10 +32,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.zIndex
 import com.chac.core.designsystem.ui.component.ChacImage
 import com.chac.core.designsystem.ui.icon.ArrowTopRight
 import com.chac.core.designsystem.ui.icon.ChacIcons
@@ -126,104 +125,102 @@ private fun ClusterCard(
         ) {
             Row(
                 modifier = Modifier
+                    .padding(start = 14.dp, top = 14.dp, end = 16.dp, bottom = 14.dp)
                     .fillMaxWidth()
-                    .height(IntrinsicSize.Min)
-                    .padding(all = 14.dp),
+                    .height(72.dp),
                 verticalAlignment = Alignment.Top,
             ) {
-                ClusterThumbnailStack(
-                    thumbnailUriStrings = cluster.thumbnailUriStrings,
+                ClusterThumbnail(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .aspectRatio(1f),
+                    thumbnailUriString = cluster.thumbnailUriStrings.firstOrNull(),
                     mediaCount = cluster.mediaList.size,
                 )
+
                 Spacer(modifier = Modifier.width(16.dp))
 
-                Column(
+                Row(
                     modifier = Modifier
                         .weight(1f)
-                        .fillMaxHeight(),
+                        .fillMaxHeight()
+                        .padding(vertical = 2.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Text(
-                        text = cluster.address,
-                        style = ChacTextStyles.Headline02,
-                        color = ChacColors.Text01,
-                    )
-                    Spacer(modifier = Modifier.height(6.dp))
-                    Text(
-                        text = cluster.formattedDate,
-                        style = ChacTextStyles.DateText,
-                        color = ChacColors.Ffffff80,
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxHeight(),
+                        verticalArrangement = Arrangement.spacedBy(space = 6.dp, alignment = Alignment.Top),
+                    ) {
+                        Text(
+                            text = cluster.address,
+                            style = ChacTextStyles.Headline02,
+                            color = ChacColors.Text01,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        Text(
+                            text = cluster.formattedDate,
+                            style = ChacTextStyles.DateText,
+                            color = ChacColors.Ffffff80,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.width(16.dp))
+
+                    Icon(
+                        imageVector = ChacIcons.ArrowTopRight,
+                        contentDescription = null,
+                        modifier = Modifier
+                            .align(Alignment.Bottom)
+                            .size(20.dp)
+                            .padding(3.dp),
+                        tint = Color.White,
                     )
                 }
-
-                Icon(
-                    imageVector = ChacIcons.ArrowTopRight,
-                    contentDescription = null,
-                    modifier = Modifier
-                        .align(Alignment.Bottom)
-                        .size(16.dp),
-                    tint = Color.White,
-                )
             }
         }
     }
 }
 
 /**
- * 겹친 사진 더미 형태의 썸네일 플레이스홀더를 표시한다
+ * 대표 썸네일과 미디어 개수 배지를 표시한다.
  *
- * @param thumbnailUriStrings 썸네일 URI 문자열 목록
+ * @param thumbnailUriString 썸네일 URI 문자열
  * @param mediaCount 미디어 개수
  */
 @Composable
-private fun ClusterThumbnailStack(
-    thumbnailUriStrings: List<String>,
+private fun ClusterThumbnail(
+    thumbnailUriString: String?,
     mediaCount: Int,
     modifier: Modifier = Modifier,
 ) {
-    val shape = RoundedCornerShape(12.dp)
-    val offsets = listOf(0.dp, 4.dp)
-
-    Box(modifier = modifier) {
-        offsets.forEachIndexed { index, offset ->
-            val mediaUri = thumbnailUriStrings.getOrNull(index)
-
-            Box(
-                modifier = Modifier
-                    .size(90.dp)
-                    .offset(x = offset, y = offset)
-                    .clip(shape)
-                    .background(MaterialTheme.colorScheme.surface)
-                    .zIndex(offsets.lastIndex - index.toFloat()), // 이미지 중첩 렌더링 순서 보정
-            ) {
-                if (mediaUri != null) {
-                    ChacImage(
-                        model = mediaUri,
-                        modifier = Modifier.matchParentSize(),
-                        contentScale = ContentScale.Crop,
-                    )
-
-                    // dim
-                    if (index > 0) {
-                        Box(
-                            modifier = Modifier
-                                .matchParentSize()
-                                .background(Color.Black.copy(alpha = 0.6f), shape),
-                        )
-                    }
-                }
-            }
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(10.dp))
+            .background(MaterialTheme.colorScheme.surface),
+    ) {
+        if (thumbnailUriString != null) {
+            ChacImage(
+                model = thumbnailUriString,
+                modifier = Modifier.matchParentSize(),
+                contentScale = ContentScale.Crop,
+            )
         }
 
         Box(
             modifier = Modifier
                 .align(Alignment.BottomEnd)
-                .padding(6.dp)
+                .padding(4.dp)
                 .background(
                     color = ChacColors.Token00000070,
                     shape = CircleShape,
                 )
-                .padding(horizontal = 8.dp)
-                .zIndex(offsets.size.toFloat()), // 이미지보다 위에 렌더링하기 위한 zIndex 설정
+                .padding(horizontal = 6.dp),
         ) {
             Text(
                 text = "+${formatCount(mediaCount)}",
@@ -253,7 +250,7 @@ private fun ClusterListPreview() {
             MediaClusterUiModel(
                 id = 1L,
                 address = "Jeju Trip",
-                formattedDate = "2024.01.15",
+                formattedDate = "2024년 01월 15일",
                 mediaList = sampleMedia(128),
                 thumbnailUriStrings = listOf(
                     "content://sample/0",
@@ -263,7 +260,7 @@ private fun ClusterListPreview() {
             MediaClusterUiModel(
                 id = 2L,
                 address = "강남구",
-                formattedDate = "2024.02.20",
+                formattedDate = "2024년 02월 20일",
                 mediaList = sampleMedia(77),
                 thumbnailUriStrings = listOf(
                     "content://sample/0",
@@ -273,7 +270,7 @@ private fun ClusterListPreview() {
             MediaClusterUiModel(
                 id = 3L,
                 address = "정말로 동네명이 너무너무 긴 경우에는 어떻게 나올까 궁금하다 궁금해 너무나도 궁금해서 미쳐버리겠다.",
-                formattedDate = "2024.03.10",
+                formattedDate = "2024년 03월 10일",
                 mediaList = sampleMedia(34),
                 thumbnailUriStrings = listOf(
                     "content://sample/0",
