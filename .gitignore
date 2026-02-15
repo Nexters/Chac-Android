@@ -22,5 +22,8 @@ build/
 *.jks
 *.keystore
 
+# Firebase
+google-services.json
+
 # User-specific configurations
 .idea

@@ -6,6 +6,8 @@ plugins {
     alias(libs.plugins.chac.android.compose)
     alias(libs.plugins.chac.android.hilt)
     alias(libs.plugins.oss.licenses)
+    alias(libs.plugins.google.services)
+    alias(libs.plugins.firebase.crashlytics)
 }
 
 android {
@@ -59,6 +61,10 @@ dependencies {
 
     // DataStore
     implementation(libs.androidx.datastore.preferences)
+
+    // Firebase
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.crashlytics)
 
     // OSS Licenses
     implementation(libs.play.services.oss.licenses)

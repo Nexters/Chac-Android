@@ -1,7 +1,5 @@
 package com.chac.feature.album.clustering
 
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -12,10 +10,15 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -36,18 +39,19 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.chac.core.designsystem.ui.component.ChacTopBar
 import com.chac.core.designsystem.ui.theme.ChacColors
 import com.chac.core.designsystem.ui.theme.ChacTextStyles
 import com.chac.core.designsystem.ui.theme.ChacTheme
 import com.chac.core.permission.MediaWithLocationPermissionUtil
 import com.chac.core.permission.MediaWithLocationPermissionUtil.launchMediaWithLocationPermission
 import com.chac.core.permission.compose.moveToPermissionSetting
+import com.chac.core.permission.compose.rememberAwaitNotificationPermissionResult
 import com.chac.core.permission.compose.rememberRegisterMediaWithLocationPermission
 import com.chac.core.resources.R
 import com.chac.domain.album.media.model.MediaType
 import com.chac.feature.album.clustering.component.AlbumSectionHeader
 import com.chac.feature.album.clustering.component.ClusterList
-import com.chac.feature.album.clustering.component.ClusteringTopBar
 import com.chac.feature.album.clustering.component.TotalPhotoSummary
 import com.chac.feature.album.clustering.model.ClusteringUiState
 import com.chac.feature.album.model.MediaClusterUiModel
@@ -58,46 +62,43 @@ import com.chac.feature.album.model.MediaUiModel
  *
  * @param viewModel 클러스터링 화면 ViewModel
  * @param onClickCluster 클러스터 카드 클릭 이벤트 콜백
+ * @param onClickAllPhotos 전체 사진 갤러리 이동 콜백
  * @param onClickSettings 설정 버튼 클릭 이벤트 콜백
  */
 @Composable
 fun ClusteringRoute(
     viewModel: ClusteringViewModel = hiltViewModel(),
-    onClickCluster: (MediaClusterUiModel) -> Unit,
+    onClickCluster: (Long) -> Unit,
+    onClickAllPhotos: () -> Unit,
     onClickSettings: () -> Unit,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
 
-    val permission = rememberRegisterMediaWithLocationPermission(
-        onGranted = { viewModel.onPermissionChanged(true) },
-        onDenied = { viewModel.onPermissionChanged(false) },
-        onPermanentlyDenied = { viewModel.onPermissionChanged(false) },
+    val mediaWithLocationPermission = rememberRegisterMediaWithLocationPermission(
+        onGranted = { viewModel.onMediaWithLocationPermissionChanged(true) },
+        onDenied = { viewModel.onMediaWithLocationPermissionChanged(false) },
+        onPermanentlyDenied = { viewModel.onMediaWithLocationPermissionChanged(false) },
     )
 
-    // 알림 권한 요청 런처
-    val requestPermissionLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestPermission(),
-        onResult = { isGranted ->
-            // TODO 여기다가 알림 권한 on off에 따른 ui 처리해두면됨
-        },
-    )
+    val awaitNotificationPermissionResult = rememberAwaitNotificationPermissionResult()
 
+    // 알림 권한 요청을 기다린 뒤, 미디어/위치 권한 요청을 진행한다.
     LaunchedEffect(Unit) {
-        val hasPermission = MediaWithLocationPermissionUtil.checkPermission(context)
-        viewModel.onPermissionChanged(hasPermission)
-        if (!hasPermission) {
-            permission.launchMediaWithLocationPermission()
-        }
+        awaitNotificationPermissionResult()
 
-//        requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        val hasMediaWithLocationPermission = MediaWithLocationPermissionUtil.checkPermission(context)
+        viewModel.onMediaWithLocationPermissionChanged(hasMediaWithLocationPermission)
+        if (!hasMediaWithLocationPermission) {
+            mediaWithLocationPermission.launchMediaWithLocationPermission()
+        }
     }
 
     DisposableEffect(lifecycleOwner, context) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
-                viewModel.onPermissionChanged(MediaWithLocationPermissionUtil.checkPermission(context))
+                viewModel.onMediaWithLocationPermissionChanged(MediaWithLocationPermissionUtil.checkPermission(context))
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -107,6 +108,7 @@ fun ClusteringRoute(
     ClusteringScreen(
         uiState = uiState,
         onClickCluster = onClickCluster,
+        onClickAllPhotos = onClickAllPhotos,
         onClickSettings = onClickSettings,
     )
 }
@@ -116,12 +118,14 @@ fun ClusteringRoute(
  *
  * @param uiState 클러스터링 화면 상태
  * @param onClickCluster 클러스터 카드 클릭 이벤트 콜백
+ * @param onClickAllPhotos 전체 사진 갤러리 이동 콜백
  * @param onClickSettings 설정 버튼 클릭 이벤트 콜백
  */
 @Composable
 private fun ClusteringScreen(
     uiState: ClusteringUiState,
-    onClickCluster: (MediaClusterUiModel) -> Unit,
+    onClickCluster: (Long) -> Unit,
+    onClickAllPhotos: () -> Unit,
     onClickSettings: () -> Unit = {},
 ) {
     val context = LocalContext.current
@@ -133,7 +137,24 @@ private fun ClusteringScreen(
             .background(ChacColors.Background)
             .padding(horizontal = 20.dp),
     ) {
-        ClusteringTopBar(onClickSettings = onClickSettings)
+        ChacTopBar(
+            showWatermark = true,
+            actions = {
+                IconButton(
+                    onClick = onClickSettings,
+                    modifier = Modifier.offset(x = 12.dp), // IconButton로 인한 패딩만큼 오른쪽으로 이동
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Settings,
+                        contentDescription = stringResource(R.string.clustering_settings_cd),
+                        modifier = Modifier.size(24.dp),
+                        tint = ChacColors.Text04Caption,
+                    )
+                }
+            },
+        )
+
+        Spacer(modifier = Modifier.height(24.dp))
 
         Column(
             modifier = Modifier
@@ -152,7 +173,9 @@ private fun ClusteringScreen(
 
                     CommonSectionOfPermissionGranted(
                         isGenerating = isGenerating,
+                        totalPhotoCount = uiState.totalPhotoCount,
                         clusters = clusters,
+                        onClickAllPhotos = onClickAllPhotos,
                     )
 
                     Box(Modifier.weight(1f)) {
@@ -179,16 +202,18 @@ private fun ClusteringScreen(
  * 권한이 허용된 화면의 공통 영역
  *
  * @param isGenerating 클러스터 리스트가 로딩상태인지 여부
+ * @param totalPhotoCount 전체 사진 개수
  * @param clusters 클러스터 리스트
+ * @param onClickAllPhotos 전체 사진 요약 카드 클릭 이벤트 콜백
  */
 @Composable
 private fun CommonSectionOfPermissionGranted(
     isGenerating: Boolean,
+    totalPhotoCount: Int,
     clusters: List<MediaClusterUiModel>,
+    onClickAllPhotos: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val totalCount = clusters.sumOf { it.mediaList.size }
-
     Column(modifier = modifier) {
         Text(
             text = stringResource(R.string.clustering_top_title),
@@ -198,7 +223,10 @@ private fun CommonSectionOfPermissionGranted(
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        TotalPhotoSummary(totalCount = totalCount)
+        TotalPhotoSummary(
+            totalCount = totalPhotoCount,
+            onClick = onClickAllPhotos,
+        )
 
         Spacer(modifier = Modifier.height(40.dp))
 
@@ -207,7 +235,7 @@ private fun CommonSectionOfPermissionGranted(
             clusterCount = clusters.size,
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(6.dp))
     }
 }
 
@@ -332,6 +360,7 @@ private fun ClusteringScreenPreview(
         ClusteringScreen(
             uiState = uiState,
             onClickCluster = {},
+            onClickAllPhotos = {},
         )
     }
 }
@@ -372,10 +401,10 @@ private class ClusteringUiStatePreviewProvider : PreviewParameterProvider<Cluste
 
     override val values: Sequence<ClusteringUiState> = sequenceOf(
         ClusteringUiState.PermissionChecking,
-        ClusteringUiState.Loading(emptyList()),
-        ClusteringUiState.Loading(sampleClusters),
-        ClusteringUiState.Completed(sampleClusters),
-        ClusteringUiState.Completed(emptyList()),
+        ClusteringUiState.Loading(totalPhotoCount = 0, clusters = emptyList()),
+        ClusteringUiState.Loading(totalPhotoCount = 34, clusters = sampleClusters),
+        ClusteringUiState.Completed(totalPhotoCount = 34, clusters = sampleClusters),
+        ClusteringUiState.Completed(totalPhotoCount = 0, clusters = emptyList()),
         ClusteringUiState.PermissionDenied,
     )
 }
