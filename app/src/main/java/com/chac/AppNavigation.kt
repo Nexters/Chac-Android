@@ -10,8 +10,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.ui.Modifier
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
 import androidx.lifecycle.viewmodel.navigation3.ViewModelStoreNavEntryDecoratorDefaults
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
@@ -30,8 +33,30 @@ private val NAV_SLIDE_EASING = CubicBezierEasing(0.22f, 1f, 0.36f, 1f)
 
 /** Navigation3 호스트를 구성하고 앨범 기능 entry provider를 연결한다 */
 @Composable
-fun ChacAppNavigation() {
-    val backStack = rememberNavBackStack(AlbumNavKey.Clustering)
+fun ChacAppNavigation(
+    viewModel: MainViewModel = hiltViewModel(),
+) {
+    val startDestination by viewModel.startDestination.collectAsStateWithLifecycle()
+
+    if (startDestination == StartDestination.Loading) return
+
+    val initialKey: AlbumNavKey = when (startDestination) {
+        StartDestination.Onboarding -> AlbumNavKey.Onboarding
+        else -> AlbumNavKey.Clustering
+    }
+
+    ChacNavHost(
+        initialKey = initialKey,
+        onOnboardingCompleted = viewModel::completeOnboarding,
+    )
+}
+
+@Composable
+private fun ChacNavHost(
+    initialKey: AlbumNavKey,
+    onOnboardingCompleted: () -> Unit,
+) {
+    val backStack = rememberNavBackStack(initialKey)
     val saveableStateHolder = rememberSaveableStateHolder()
 
     BackHandler(enabled = backStack.size > 1) {
@@ -115,6 +140,13 @@ fun ChacAppNavigation() {
                     onCloseSaveCompleted = { backStack.popToClustering() },
                     onClickToList = { backStack.popToClustering() },
                     onClickBack = { backStack.pop() },
+                    onOnboardingCompleted = {
+                        onOnboardingCompleted()
+                        backStack.replaceWith(AlbumNavKey.Clustering)
+                    },
+                    onClickOnboarding = {
+                        backStack.add(AlbumNavKey.Onboarding)
+                    },
                 )
             },
         )
@@ -133,4 +165,10 @@ private fun NavBackStack<NavKey>.popToClustering() {
     while (size > 1 && lastOrNull() !is AlbumNavKey.Clustering) {
         removeLastOrNull()
     }
+}
+
+/** 백스택을 지정된 키로 교체한다 */
+private fun NavBackStack<NavKey>.replaceWith(key: NavKey) {
+    clear()
+    add(key)
 }

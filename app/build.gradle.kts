@@ -54,9 +54,13 @@ dependencies {
     implementation(libs.androidx.core.splashscreen)
     implementation(libs.timber)
 
-    // Hilt work
+    // Hilt
+    implementation(libs.hilt.navigation.compose)
     implementation(libs.hilt.ext.work)
     ksp(libs.hilt.ext.compiler)
+
+    // DataStore
+    implementation(libs.androidx.datastore.preferences)
 
     // Firebase
     implementation(platform(libs.firebase.bom))

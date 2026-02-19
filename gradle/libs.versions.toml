@@ -43,6 +43,9 @@ firebaseCrashlyticsPlugin = "3.0.6"
 ossLicensesPlugin = "0.10.10"
 playServicesOssLicenses = "17.4.0"
 
+# DataStore
+androidxDataStore = "1.1.7"
+
 # ETC
 apacheCommonsMath3 = "3.6.1"
 timber = "5.0.1"
@@ -110,6 +113,9 @@ room-compiler = { group = "androidx.room", name = "room-compiler", version.ref =
 
 # Unit Test
 junit = { group = "junit", name = "junit", version.ref = "junit" }
+
+# DataStore
+androidx-datastore-preferences = { group = "androidx.datastore", name = "datastore-preferences", version.ref = "androidxDataStore" }
 
 # Firebase
 firebase-bom = { group = "com.google.firebase", name = "firebase-bom", version.ref = "firebaseBom" }

@@ -7,6 +7,8 @@ import com.chac.feature.album.gallery.AllPhotosGalleryRoute
 import com.chac.feature.album.gallery.GalleryRoute
 import com.chac.feature.album.gallery.component.AllPhotosMediaPreviewRoute
 import com.chac.feature.album.gallery.component.MediaPreviewRoute
+import com.chac.feature.album.model.MediaClusterUiModel
+import com.chac.feature.album.onboarding.OnboardingRoute
 import com.chac.feature.album.save.AlbumTitleEditRoute
 import com.chac.feature.album.save.SaveCompletedRoute
 import com.chac.feature.album.settings.SettingsRoute
@@ -23,6 +25,8 @@ import com.chac.feature.album.settings.SettingsRoute
  * @param onCloseSaveCompleted 저장 완료 화면 닫기 버튼 클릭 이벤트 콜백
  * @param onClickToList 저장 완료 화면에서 '목록으로' 버튼 클릭 이벤트 콜백
  * @param onClickBack 뒤로가기 버튼 클릭 이벤트 콜백
+ * @param onOnboardingCompleted 온보딩 완료 콜백
+ * @param onClickOnboarding 온보딩 화면 이동 콜백
  */
 fun EntryProviderScope<NavKey>.albumEntries(
     onClickCluster: (Long) -> Unit,
@@ -34,6 +38,8 @@ fun EntryProviderScope<NavKey>.albumEntries(
     onCloseSaveCompleted: () -> Unit,
     onClickToList: () -> Unit,
     onClickBack: () -> Unit,
+    onOnboardingCompleted: () -> Unit,
+    onClickOnboarding: () -> Unit,
 ) {
     entry(AlbumNavKey.Clustering) { _ ->
         ClusteringRoute(
@@ -89,6 +95,12 @@ fun EntryProviderScope<NavKey>.albumEntries(
     entry(AlbumNavKey.Settings) { _ ->
         SettingsRoute(
             onClickBack = onClickBack,
+            onClickOnboarding = onClickOnboarding,
+        )
+    }
+    entry(AlbumNavKey.Onboarding) { _ ->
+        OnboardingRoute(
+            onCompleted = onOnboardingCompleted,
         )
     }
 }

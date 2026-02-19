@@ -32,15 +32,18 @@ private const val PRIVACY_POLICY_URL =
  * 설정 화면 라우트
  *
  * @param onClickBack 뒤로가기 버튼 클릭 이벤트 콜백
+ * @param onClickOnboarding 온보딩 다시보기 클릭 이벤트 콜백
  */
 @Composable
 fun SettingsRoute(
     onClickBack: () -> Unit,
+    onClickOnboarding: () -> Unit,
 ) {
     val context = LocalContext.current
 
     SettingsScreen(
         onClickBack = onClickBack,
+        onClickOnboarding = onClickOnboarding,
         onClickOssLicenses = {
             context.startActivity(Intent(context, OssLicensesMenuActivity::class.java))
         },
@@ -54,12 +57,14 @@ fun SettingsRoute(
  * 설정 화면
  *
  * @param onClickBack 뒤로가기 버튼 클릭 이벤트 콜백
+ * @param onClickOnboarding 온보딩 다시보기 클릭 이벤트 콜백
  * @param onClickOssLicenses 오픈소스 라이선스 클릭 이벤트 콜백
  * @param onClickPrivacyPolicy 개인정보 처리방침 클릭 이벤트 콜백
  */
 @Composable
 private fun SettingsScreen(
     onClickBack: () -> Unit,
+    onClickOnboarding: () -> Unit,
     onClickOssLicenses: () -> Unit,
     onClickPrivacyPolicy: () -> Unit,
 ) {
@@ -73,6 +78,11 @@ private fun SettingsScreen(
             title = stringResource(R.string.settings_title),
             navigationContentDescription = stringResource(R.string.settings_back_cd),
             onClickBack = onClickBack,
+        )
+
+        SettingsItem(
+            title = stringResource(R.string.settings_onboarding),
+            onClick = onClickOnboarding,
         )
 
         SettingsItem(
@@ -121,6 +131,7 @@ private fun SettingsScreenPreview() {
     ChacTheme {
         SettingsScreen(
             onClickBack = {},
+            onClickOnboarding = {},
             onClickOssLicenses = {},
             onClickPrivacyPolicy = {},
         )
