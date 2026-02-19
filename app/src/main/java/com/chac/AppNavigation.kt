@@ -24,6 +24,7 @@ import androidx.navigation3.runtime.SaveableStateHolderNavEntryDecorator
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.ui.NavDisplay
+import com.chac.core.designsystem.ui.theme.ChacColors
 import com.chac.feature.album.navigation.AlbumNavKey
 import com.chac.feature.album.navigation.albumEntries
 
@@ -63,7 +64,10 @@ private fun ChacNavHost(
         backStack.pop()
     }
 
-    Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
+    Scaffold(
+        modifier = Modifier.fillMaxSize(),
+        containerColor = ChacColors.Background,
+    ) { innerPadding ->
         NavDisplay(
             backStack = backStack,
             onBack = { backStack.pop() },

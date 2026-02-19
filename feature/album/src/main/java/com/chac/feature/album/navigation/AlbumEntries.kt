@@ -7,7 +7,6 @@ import com.chac.feature.album.gallery.AllPhotosGalleryRoute
 import com.chac.feature.album.gallery.GalleryRoute
 import com.chac.feature.album.gallery.component.AllPhotosMediaPreviewRoute
 import com.chac.feature.album.gallery.component.MediaPreviewRoute
-import com.chac.feature.album.model.MediaClusterUiModel
 import com.chac.feature.album.onboarding.OnboardingRoute
 import com.chac.feature.album.save.AlbumTitleEditRoute
 import com.chac.feature.album.save.SaveCompletedRoute

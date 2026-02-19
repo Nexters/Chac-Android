@@ -52,7 +52,6 @@ fun SettingsRoute(
         onClickOssLicenses = {
             context.startActivity(Intent(context, OssLicensesMenuActivity::class.java))
         },
-        onClickRewatchOnboarding = {},
         onClickPrivacyPolicy = {
             context.startActivity(Intent(Intent.ACTION_VIEW, PRIVACY_POLICY_URL.toUri()))
         },
@@ -65,7 +64,6 @@ fun SettingsRoute(
  * @param onClickBack 뒤로가기 버튼 클릭 이벤트 콜백
  * @param onClickOnboarding 온보딩 다시보기 클릭 이벤트 콜백
  * @param onClickOssLicenses 오픈소스 라이선스 클릭 이벤트 콜백
- * @param onClickRewatchOnboarding 온보딩 다시보기 클릭 이벤트 콜백
  * @param onClickPrivacyPolicy 개인정보 처리방침 클릭 이벤트 콜백
  */
 @Composable
@@ -73,7 +71,6 @@ private fun SettingsScreen(
     onClickBack: () -> Unit,
     onClickOnboarding: () -> Unit,
     onClickOssLicenses: () -> Unit,
-    onClickRewatchOnboarding: () -> Unit,
     onClickPrivacyPolicy: () -> Unit,
 ) {
     Column(
@@ -103,7 +100,7 @@ private fun SettingsScreen(
             )
             SettingsItem(
                 title = stringResource(R.string.settings_rewatch_onboarding),
-                onClick = onClickRewatchOnboarding,
+                onClick = onClickOnboarding,
             )
             SettingsItem(
                 title = stringResource(R.string.settings_privacy_policy),
@@ -160,7 +157,6 @@ private fun SettingsScreenPreview() {
             onClickBack = {},
             onClickOnboarding = {},
             onClickOssLicenses = {},
-            onClickRewatchOnboarding = {},
             onClickPrivacyPolicy = {},
         )
     }
