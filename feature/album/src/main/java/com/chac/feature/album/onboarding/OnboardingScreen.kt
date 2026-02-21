@@ -65,13 +65,18 @@ private fun OnboardingScreen(
     val coroutineScope = rememberCoroutineScope()
     val isLastPage = pagerState.currentPage == ONBOARDING_PAGE_COUNT - 1
 
-    Box {
-        Image(
-            painter = painterResource(R.drawable.im_onboarding_bg),
-            contentDescription = null,
+    Box(modifier = Modifier.fillMaxSize()) {
+        HorizontalPager(
+            state = pagerState,
             modifier = Modifier.fillMaxSize(),
-            contentScale = ContentScale.Crop,
-        )
+        ) { page ->
+            if (page == 0) {
+                OnboardingFirstPage(modifier = Modifier.fillMaxSize())
+            } else {
+                OnboardingPage(page = page, modifier = Modifier.fillMaxSize())
+            }
+        }
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -88,20 +93,7 @@ private fun OnboardingScreen(
                     .clickable(onClick = onCompleted),
             )
 
-            HorizontalPager(
-                state = pagerState,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f),
-            ) { page ->
-                if (page == 0) {
-                    OnboardingFirstPage()
-                } else {
-                    OnboardingPage(page = page)
-                }
-            }
-
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.weight(1f))
 
             PageIndicator(
                 currentPage = pagerState.currentPage,
@@ -201,31 +193,40 @@ private fun OnboardingPage(
 private fun OnboardingFirstPage(
     modifier: Modifier = Modifier,
 ) {
-    Column(
-        modifier = modifier.fillMaxSize(),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
-    ) {
+    Box(modifier = modifier.fillMaxSize()) {
         Image(
-            painter = painterResource(R.drawable.im_onboarding_logo),
+            painter = painterResource(R.drawable.im_onboarding_bg),
             contentDescription = null,
+            modifier = Modifier.fillMaxSize(),
+            contentScale = ContentScale.Crop,
         )
 
-        Spacer(modifier = Modifier.height(26.dp))
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
+        ) {
+            Image(
+                painter = painterResource(R.drawable.im_onboarding_logo),
+                contentDescription = null,
+            )
 
-        Image(
-            painter = painterResource(R.drawable.im_onboarding_watermark),
-            contentDescription = null,
-        )
+            Spacer(modifier = Modifier.height(26.dp))
 
-        Spacer(modifier = Modifier.height(20.dp))
+            Image(
+                painter = painterResource(R.drawable.im_onboarding_watermark),
+                contentDescription = null,
+            )
 
-        Text(
-            text = stringResource(R.string.onboarding_page0_title),
-            style = ChacTextStyles.Headline01,
-            color = ChacColors.Text01,
-            textAlign = TextAlign.Center,
-        )
+            Spacer(modifier = Modifier.height(20.dp))
+
+            Text(
+                text = stringResource(R.string.onboarding_page0_title),
+                style = ChacTextStyles.Headline01,
+                color = ChacColors.Text01,
+                textAlign = TextAlign.Center,
+            )
+        }
     }
 }
 
