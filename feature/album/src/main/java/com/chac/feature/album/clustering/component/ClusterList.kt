@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -41,6 +42,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.PlatformTextStyle
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
@@ -277,12 +280,19 @@ private fun ClusterThumbnail(
                     color = ChacColors.Token00000070,
                     shape = CircleShape,
                 )
+                .defaultMinSize(minWidth = 27.dp, minHeight = 17.dp)
                 .padding(horizontal = 6.dp),
+            contentAlignment = Alignment.Center,
         ) {
             Text(
                 text = "+${formatCount(mediaCount)}",
-                style = ChacTextStyles.SubNumber,
                 color = ChacColors.TextBtn01,
+                maxLines = 1,
+                softWrap = false,
+                textAlign = TextAlign.Center,
+                style = ChacTextStyles.SubNumber.copy(
+                    platformStyle = PlatformTextStyle(includeFontPadding = false),
+                ),
             )
         }
     }
