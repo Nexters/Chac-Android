@@ -290,7 +290,7 @@ private fun EmptyState() {
                 modifier = Modifier.offset(x = 5.07.dp), // 시각적인 중앙값 보정
             )
 
-            Spacer(modifier = Modifier.height(31.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
             Text(
                 text = stringResource(R.string.clustering_empty_message),
