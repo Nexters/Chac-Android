@@ -1,5 +1,9 @@
 package com.chac.feature.album.onboarding
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -246,20 +250,26 @@ private fun PageIndicator(
 ) {
     Row(
         modifier = modifier,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         repeat(pageCount) { index ->
+            val isSelected = index == currentPage
+            val indicatorWidth = animateDpAsState(
+                targetValue = if (isSelected) 16.dp else 8.dp,
+                animationSpec = tween(durationMillis = 250, easing = FastOutSlowInEasing),
+                label = "pageIndicatorWidth",
+            )
+            val indicatorColor = animateColorAsState(
+                targetValue = if (isSelected) ChacColors.Primary else ChacColors.TextBtn01.copy(alpha = 0.1f),
+                animationSpec = tween(durationMillis = 250, easing = FastOutSlowInEasing),
+                label = "pageIndicatorColor",
+            )
+
             Box(
                 modifier = Modifier
-                    .size(8.dp)
+                    .size(width = indicatorWidth.value, height = 8.dp)
                     .clip(CircleShape)
-                    .background(
-                        if (index == currentPage) {
-                            ChacColors.Primary
-                        } else {
-                            ChacColors.Text04Caption.copy(alpha = 0.3f)
-                        },
-                    ),
+                    .background(indicatorColor.value),
             )
         }
     }
