@@ -1,5 +1,6 @@
 package com.chac
 
+import android.graphics.Color as AndroidColor
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
@@ -17,7 +18,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         installSplashScreen()
         enableEdgeToEdge(
-            statusBarStyle = SystemBarStyle.dark(ChacColors.Background.toArgb()),
+            statusBarStyle = SystemBarStyle.dark(AndroidColor.TRANSPARENT),
             navigationBarStyle = SystemBarStyle.dark(ChacColors.Background.toArgb()),
         )
         setContent {

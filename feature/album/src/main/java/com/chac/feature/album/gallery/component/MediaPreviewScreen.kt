@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.CircularProgressIndicator
@@ -109,6 +110,7 @@ private fun MediaPreviewRouteScreen(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
+                    .statusBarsPadding()
                     .background(ChacColors.Background),
                 contentAlignment = Alignment.Center,
             ) {
@@ -159,6 +161,7 @@ private fun MediaPreviewScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .statusBarsPadding()
             .background(ChacColors.Background),
     ) {
         Row(

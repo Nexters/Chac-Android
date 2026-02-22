@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -145,6 +146,7 @@ fun AlbumTitleEditScreen(
         modifier = modifier
             .fillMaxSize()
             .background(ChacColors.Background)
+            .statusBarsPadding()
             .windowInsetsPadding(WindowInsets.ime.exclude(WindowInsets.navigationBars))
             .padding(bottom = 20.dp),
     ) {
