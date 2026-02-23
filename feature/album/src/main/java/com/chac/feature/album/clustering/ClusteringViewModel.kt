@@ -2,7 +2,10 @@ package com.chac.feature.album.clustering
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.chac.domain.album.embedding.usecase.StartEmbeddingIndexingUseCase
+import com.chac.domain.album.embedding.usecase.SearchPhotoEmbeddingsUseCase
 import com.chac.domain.album.media.model.ClusteringWorkState
+import com.chac.domain.album.media.model.MediaType
 import com.chac.domain.album.media.usecase.CancelClusteringUseCase
 import com.chac.domain.album.media.usecase.GetAllMediaStateUseCase
 import com.chac.domain.album.media.usecase.GetClusteredMediaStateUseCase
@@ -11,6 +14,7 @@ import com.chac.domain.album.media.usecase.StartClusteringUseCase
 import com.chac.feature.album.clustering.model.ClusteringUiState
 import com.chac.feature.album.mapper.toUiModel
 import com.chac.feature.album.model.MediaClusterUiModel
+import com.chac.feature.album.model.MediaUiModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.SharingStarted
@@ -29,6 +33,8 @@ import kotlin.coroutines.cancellation.CancellationException
 /** 클러스터링 화면 상태를 제공하는 ViewModel */
 @HiltViewModel
 class ClusteringViewModel @Inject constructor(
+    private val startEmbeddingIndexingUseCase: StartEmbeddingIndexingUseCase,
+    private val searchPhotoEmbeddingsUseCase: SearchPhotoEmbeddingsUseCase,
     private val observeClusteringWorkStateUseCase: ObserveClusteringWorkStateUseCase,
     private val cancelClusteringUseCase: CancelClusteringUseCase,
     private val startClusteringUseCase: StartClusteringUseCase,
@@ -87,10 +93,36 @@ class ClusteringViewModel @Inject constructor(
     /** WorkManager 상태 수집 Job */
     private var clusteringWorkStateCollectJob: Job? = null
 
+    /** 프롬프트 검색 Job */
+    private var promptSearchJob: Job? = null
+
+    /** 현재 프롬프트 검색어 */
+    private var promptQuery: String? = null
+
     init {
         viewModelScope.launch {
             getAllMediaStateUseCase().collect { mediaList ->
-                totalPhotoCountState.value = mediaList.size
+                if (promptQuery == null) {
+                    totalPhotoCountState.value = mediaList.size
+                }
+            }
+        }
+    }
+
+    fun setPromptQuery(query: String?) {
+        val normalized = query?.trim()?.takeIf { it.isNotEmpty() }
+        if (promptQuery == normalized) return
+
+        promptQuery = normalized
+        if (normalized != null) {
+            clusterStateCollectJob?.cancel()
+            clusterStateCollectJob = null
+            clusteringWorkStateCollectJob?.cancel()
+            clusteringWorkStateCollectJob = null
+            cancelClusteringUseCase()
+
+            if (hasMediaWithLocationPermission.value == true) {
+                searchWithPrompt(normalized)
             }
         }
     }
@@ -107,7 +139,17 @@ class ClusteringViewModel @Inject constructor(
             clusterStateCollectJob = null
             clusteringWorkStateCollectJob?.cancel()
             clusteringWorkStateCollectJob = null
+            promptSearchJob?.cancel()
+            promptSearchJob = null
             cancelClusteringUseCase()
+            return
+        }
+
+        startEmbeddingIndexingUseCase()
+
+        val query = promptQuery
+        if (query != null) {
+            searchWithPrompt(query)
             return
         }
 
@@ -176,6 +218,50 @@ class ClusteringViewModel @Inject constructor(
                     workState.value = state
                 }
         }
+    }
+
+    private fun searchWithPrompt(query: String) {
+        promptSearchJob?.cancel()
+        promptSearchJob = viewModelScope.launch {
+            workState.value = ClusteringWorkState.Running
+            runCatching {
+                searchPhotoEmbeddingsUseCase(query)
+            }.onSuccess { results ->
+                val mediaList = results.map { result ->
+                    MediaUiModel(
+                        id = result.id,
+                        uriString = result.uri,
+                        dateTaken = 0L,
+                        mediaType = MediaType.IMAGE,
+                    )
+                }
+                totalPhotoCountState.value = mediaList.size
+                clustersState.value = if (mediaList.isEmpty()) {
+                    emptyList()
+                } else {
+                    listOf(
+                        MediaClusterUiModel(
+                            id = createPromptClusterId(query),
+                            address = query,
+                            formattedDate = "",
+                            mediaList = mediaList,
+                            thumbnailUriStrings = mediaList.take(2).map { it.uriString },
+                        ),
+                    )
+                }
+                workState.value = ClusteringWorkState.Succeeded
+            }.onFailure { throwable ->
+                Timber.e(throwable, "Failed to search prompt result.")
+                clustersState.value = emptyList()
+                totalPhotoCountState.value = 0
+                workState.value = ClusteringWorkState.Failed
+            }
+        }
+    }
+
+    private fun createPromptClusterId(query: String): Long {
+        val candidate = query.hashCode().toLong()
+        return if (candidate == 0L) 1L else candidate
     }
 
     /**

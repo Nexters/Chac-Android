@@ -14,6 +14,8 @@ dependencies {
     implementation(projects.domain.album)
     implementation(projects.core.resources)
     implementation(libs.commons.math3)
+    implementation(libs.onnxruntime.android)
+    implementation(libs.coil.compose)
     implementation(libs.androidx.work.ktx)
     implementation(libs.hilt.ext.common)
     implementation(libs.hilt.ext.work)

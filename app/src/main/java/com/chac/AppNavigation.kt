@@ -42,8 +42,9 @@ fun ChacAppNavigation(
     if (startDestination == StartDestination.Loading) return
 
     val initialKey: AlbumNavKey = when (startDestination) {
-        StartDestination.Onboarding -> AlbumNavKey.Onboarding
-        else -> AlbumNavKey.Clustering
+        StartDestination.Onboarding -> AlbumNavKey.PromptInput
+        StartDestination.PromptInput -> AlbumNavKey.PromptInput
+        StartDestination.Loading -> AlbumNavKey.PromptInput
     }
 
     ChacNavHost(
@@ -123,6 +124,12 @@ private fun ChacNavHost(
                     onClickAllPhotos = {
                         backStack.add(AlbumNavKey.AllPhotosGallery)
                     },
+                    onClickPromptSearch = { query ->
+                        backStack.add(AlbumNavKey.PromptResult(query))
+                    },
+                    onClickLocationClustering = {
+                        backStack.add(AlbumNavKey.Clustering)
+                    },
                     onClickNextInGallery = { clusterId, selectedMediaIds ->
                         backStack.add(AlbumNavKey.AlbumTitleEdit(clusterId, selectedMediaIds))
                     },
@@ -146,7 +153,7 @@ private fun ChacNavHost(
                     onClickBack = { backStack.pop() },
                     onOnboardingCompleted = {
                         onOnboardingCompleted()
-                        backStack.replaceWith(AlbumNavKey.Clustering)
+                        backStack.replaceWith(AlbumNavKey.PromptInput)
                     },
                     onClickOnboarding = {
                         backStack.add(AlbumNavKey.Onboarding)

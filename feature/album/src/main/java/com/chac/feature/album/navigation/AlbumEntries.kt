@@ -8,6 +8,7 @@ import com.chac.feature.album.gallery.GalleryRoute
 import com.chac.feature.album.gallery.component.AllPhotosMediaPreviewRoute
 import com.chac.feature.album.gallery.component.MediaPreviewRoute
 import com.chac.feature.album.onboarding.OnboardingRoute
+import com.chac.feature.album.prompt.PromptInputRoute
 import com.chac.feature.album.save.AlbumTitleEditRoute
 import com.chac.feature.album.save.SaveCompletedRoute
 import com.chac.feature.album.settings.SettingsRoute
@@ -17,6 +18,8 @@ import com.chac.feature.album.settings.SettingsRoute
  *
  * @param onClickCluster 클러스터 카드 클릭 이벤트 콜백 (clusterId)
  * @param onClickAllPhotos '모든 사진' 버튼 클릭 이벤트 콜백
+ * @param onClickPromptSearch 프롬프트 검색 이벤트 콜백 (query)
+ * @param onClickLocationClustering 장소 기준 분류 화면 진입 콜백
  * @param onClickNextInGallery 갤러리 화면에서 '다음' 버튼 클릭 이벤트 콜백 (clusterId, selectedMediaIds). 전체 사진 저장 시 clusterId는 null이다.
  * @param onLongClickMediaItem 미디어 아이템의 롱클릭 이벤트 콜백 (clusterId, mediaId). 전체 사진 모드에서는 clusterId가 null이다.
  * @param onClickSettings 설정 화면 이동 콜백
@@ -30,6 +33,8 @@ import com.chac.feature.album.settings.SettingsRoute
 fun EntryProviderScope<NavKey>.albumEntries(
     onClickCluster: (Long) -> Unit,
     onClickAllPhotos: () -> Unit,
+    onClickPromptSearch: (String) -> Unit,
+    onClickLocationClustering: () -> Unit,
     onClickNextInGallery: (Long?, List<Long>) -> Unit,
     onLongClickMediaItem: (Long?, Long) -> Unit,
     onClickSettings: () -> Unit,
@@ -40,6 +45,21 @@ fun EntryProviderScope<NavKey>.albumEntries(
     onOnboardingCompleted: () -> Unit,
     onClickOnboarding: () -> Unit,
 ) {
+    entry(AlbumNavKey.PromptInput) { _ ->
+        PromptInputRoute(
+            onSearchPrompt = onClickPromptSearch,
+            onClickLocationClustering = onClickLocationClustering,
+            onClickSettings = onClickSettings,
+        )
+    }
+    entry<AlbumNavKey.PromptResult> { key ->
+        ClusteringRoute(
+            promptQuery = key.query,
+            onClickCluster = onClickCluster,
+            onClickAllPhotos = onClickAllPhotos,
+            onClickSettings = onClickSettings,
+        )
+    }
     entry(AlbumNavKey.Clustering) { _ ->
         ClusteringRoute(
             onClickCluster = onClickCluster,

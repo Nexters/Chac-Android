@@ -6,6 +6,20 @@ import kotlinx.serialization.Serializable
 /** 앨범 기능에서 사용하는 NavKey 정의 */
 @Serializable
 sealed interface AlbumNavKey : NavKey {
+    /** 프롬프트 입력 시작 화면 */
+    @Serializable
+    data object PromptInput : AlbumNavKey
+
+    /**
+     * 프롬프트 검색 결과 화면
+     *
+     * @param query 사용자 프롬프트
+     */
+    @Serializable
+    data class PromptResult(
+        val query: String,
+    ) : AlbumNavKey
+
     /** 클러스터링 목록 화면 */
     @Serializable
     data object Clustering : AlbumNavKey

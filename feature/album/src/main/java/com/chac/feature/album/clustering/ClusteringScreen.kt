@@ -68,6 +68,7 @@ import com.chac.feature.album.model.MediaUiModel
 @Composable
 fun ClusteringRoute(
     viewModel: ClusteringViewModel = hiltViewModel(),
+    promptQuery: String? = null,
     onClickCluster: (Long) -> Unit,
     onClickAllPhotos: () -> Unit,
     onClickSettings: () -> Unit,
@@ -83,6 +84,10 @@ fun ClusteringRoute(
     )
 
     val awaitNotificationPermissionResult = rememberAwaitNotificationPermissionResult()
+
+    LaunchedEffect(promptQuery) {
+        viewModel.setPromptQuery(promptQuery)
+    }
 
     // 알림 권한 요청을 기다린 뒤, 미디어/위치 권한 요청을 진행한다.
     LaunchedEffect(Unit) {

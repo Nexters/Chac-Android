@@ -2,6 +2,7 @@ package com.chac
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.chac.domain.album.embedding.usecase.StartEmbeddingIndexingUseCase
 import com.chac.onboarding.OnboardingRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
@@ -14,13 +15,16 @@ import javax.inject.Inject
 @HiltViewModel
 class MainViewModel @Inject constructor(
     private val onboardingRepository: OnboardingRepository,
+    private val startEmbeddingIndexingUseCase: StartEmbeddingIndexingUseCase,
 ) : ViewModel() {
     val startDestination: StateFlow<StartDestination> =
         onboardingRepository.isCompleted
-            .map { completed ->
-                if (completed) StartDestination.Clustering else StartDestination.Onboarding
-            }
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), StartDestination.Loading)
+            .map { StartDestination.PromptInput }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), StartDestination.PromptInput)
+
+    init {
+        startEmbeddingIndexingUseCase()
+    }
 
     fun completeOnboarding() {
         viewModelScope.launch {
@@ -33,5 +37,5 @@ class MainViewModel @Inject constructor(
 enum class StartDestination {
     Loading,
     Onboarding,
-    Clustering,
+    PromptInput,
 }
