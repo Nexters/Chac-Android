@@ -1,5 +1,6 @@
 package com.chac.feature.album.save
 
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -111,7 +112,10 @@ class AlbumTitleEditViewModel @Inject constructor(
 
                 _uiState.value = AlbumTitleEditUiState(
                     isInitialized = true,
-                    title = TextFieldValue(""),
+                    title = TextFieldValue(
+                        text = defaultTitle,
+                        selection = TextRange(defaultTitle.length),
+                    ),
                     placeholder = defaultTitle,
                     selectedCount = mediaList.size,
                     selectedUriStrings = mediaList.map { it.uriString },

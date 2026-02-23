@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -134,6 +135,7 @@ private fun ClusteringScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .statusBarsPadding()
             .background(ChacColors.Background)
             .padding(horizontal = 20.dp),
     ) {
@@ -290,7 +292,7 @@ private fun EmptyState() {
                 modifier = Modifier.offset(x = 5.07.dp), // 시각적인 중앙값 보정
             )
 
-            Spacer(modifier = Modifier.height(31.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
             Text(
                 text = stringResource(R.string.clustering_empty_message),
