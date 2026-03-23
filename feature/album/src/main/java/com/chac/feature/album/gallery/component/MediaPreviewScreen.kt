@@ -1,7 +1,6 @@
 package com.chac.feature.album.gallery.component
 
 import android.text.format.DateUtils
-import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -155,8 +154,6 @@ private fun MediaPreviewScreen(
     val currentMedia by remember {
         derivedStateOf { mediaList[pagerState.currentPage] }
     }
-
-    BackHandler(onBack = onDismiss)
 
     Column(
         modifier = Modifier
